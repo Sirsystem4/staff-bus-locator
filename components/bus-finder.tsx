@@ -200,7 +200,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
           <div className="flex items-center gap-2">
             {/* <span className="hidden items-center gap-1.5 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-2.5 py-1 text-xs font-semibold text-[#166534] md:flex" title="Realtime synchronized with Supabase database">
               <span className={`size-2 rounded-full ${isLiveConnected ? 'bg-[#22c55e] animate-pulse' : 'bg-[#eab308]'}`} />
-              {isLiveConnected ? 'Supabase live Now' : 'Reconnecting...'}
+              {isLiveConnected ? 'Supabase live' : 'Reconnecting...'}
             </span> */}
             <button
               onClick={() => {
