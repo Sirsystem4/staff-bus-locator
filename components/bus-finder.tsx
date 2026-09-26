@@ -1,13 +1,13 @@
 'use client'
 
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import { ArrowRight, BusFront, Check, ChevronDown, CircleHelp, Database, KeyRound, MapPin, Navigation, Search, ShieldCheck, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BusFront, Check, ChevronDown, CircleHelp, Database, KeyRound, MapPin, Navigation, Search, ShieldCheck, X } from 'lucide-react'
 import { verifyAdminAccessCode } from '@/app/actions/auth'
 import { getBuses, moveBus } from '@/app/actions/buses'
 import { supabase } from '@/lib/supabase/client'
 import type { Bus } from '@/lib/buses'
 import { escapeRegExp, EMPTY_BUS, formatLocation, isParked, pad2, searchBuses, tokenize } from '@/lib/buses'
-import { findZone, positionOptions, type Layout } from '@/lib/layout'
+import { findZone, positionOptions, type Layout, type Zone } from '@/lib/layout'
 
 
 export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[]; layout: Layout }) {
@@ -198,18 +198,61 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
         <div className="mx-auto flex max-w-[1360px] items-center justify-between px-5 py-4 lg:px-10">
           <div className="flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl bg-[#0758a6] text-white"><BusFront size={23} /></div><div><p className="text-lg font-bold tracking-tight">Staff Bus Finder</p><p className="text-xs text-[#738297]">Main car park · Manual location updates</p></div></div>
           <div className="flex items-center gap-2">
-            <span className="hidden items-center gap-1.5 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-2.5 py-1 text-xs font-semibold text-[#166534] md:flex" title="Realtime synchronized with Supabase database">
+            {/* <span className="hidden items-center gap-1.5 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-2.5 py-1 text-xs font-semibold text-[#166534] md:flex" title="Realtime synchronized with Supabase database">
               <span className={`size-2 rounded-full ${isLiveConnected ? 'bg-[#22c55e] animate-pulse' : 'bg-[#eab308]'}`} />
               {isLiveConnected ? 'Supabase live' : 'Reconnecting...'}
-            </span>
-            <button onClick={() => setShowLogin(true)} className="hidden items-center gap-2 rounded-lg border border-[#dce4ed] px-3 py-2 text-sm font-semibold text-[#516176] hover:bg-[#f5f7fa] sm:flex"><ShieldCheck size={16} /> {loggedIn ? 'Admin signed in' : 'Transport admin'}</button>
+            </span> */}
+            <button
+              onClick={() => {
+                if (!loggedIn) {
+                  setShowLogin(true)
+                } else if (mode === 'admin') {
+                  setMode('staff')
+                } else {
+                  setMode('admin')
+                  const currentBus =
+                    (draft.number && buses.find((b) => b.number === draft.number)) ||
+                    (selected.number && buses.find((b) => b.number === selected.number)) ||
+                    buses[0]
+                  if (currentBus) selectBus(currentBus)
+                }
+              }}
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:px-3 sm:py-2 sm:text-sm ${loggedIn && mode === 'admin'
+                ? 'border-[#0758a6] bg-[#edf4fb] text-[#0758a6]'
+                : 'border-[#dce4ed] bg-white text-[#516176] hover:bg-[#f5f7fa] hover:text-[#0758a6]'
+                }`}
+            >
+              {loggedIn && mode === 'admin' ? (
+                <>
+                  <ArrowLeft size={16} />
+                  <span>Staff view</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck size={16} />
+                  <span>{loggedIn ? 'Admin panel' : 'Transport admin'}</span>
+                </>
+              )}
+            </button>
             <button onClick={() => setShowHelp(true)} aria-label="Help" title="Help and usage guide" className="rounded-lg p-2 text-[#718096] hover:bg-[#f1f5f9]"><CircleHelp size={19} /></button>
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-[1360px] px-5 py-8 lg:px-10 lg:py-10">
-        <div className="mb-7 flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="mb-2 text-sm font-bold uppercase tracking-[0.16em] text-[#0758a6]">Car park locator</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Find your bus without the guesswork.</h1><p className="mt-3 max-w-xl text-base leading-7 text-[#647286]">Search a bus number or route. We&apos;ll show its zone, row and position in the car park.</p></div><div className="flex rounded-xl border border-[#dce4ed] bg-white p-1 shadow-sm"><button onClick={() => setMode('staff')} className={`rounded-lg px-4 py-2 text-sm font-bold ${mode === 'staff' ? 'bg-[#0758a6] text-white' : 'text-[#627187]'}`}>Staff view</button><button onClick={() => { setMode('admin'); if (!loggedIn) setShowLogin(true); const currentBus = (draft.number && buses.find((b) => b.number === draft.number)) || (selected.number && buses.find((b) => b.number === selected.number)) || buses[0]; if (currentBus) selectBus(currentBus); }} className={`rounded-lg px-4 py-2 text-sm font-bold ${mode === 'admin' ? 'bg-[#0758a6] text-white' : 'text-[#627187]'}`}>Update locations</button></div></div>
+        <div className="mb-7">
+          <p className="mb-2 text-sm font-bold uppercase tracking-[0.16em] text-[#0758a6]">
+            {mode === 'admin' ? 'Transport Admin Control' : 'Car park locator'}
+          </p>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            {mode === 'admin' ? 'Update bus parking positions.' : 'Find your bus without the guesswork.'}
+          </h1>
+          <p className="mt-3 max-w-xl text-base leading-7 text-[#647286]">
+            {mode === 'admin'
+              ? 'Select a shuttle and assign or clear its assigned parking zone and bay position.'
+              : "Search a bus number or route. We'll show its zone, row and position in the car park."}
+          </p>
+        </div>
 
         {mode === 'staff' ? <>
           <div className="mb-4 flex max-w-2xl items-center gap-3 rounded-2xl border border-[#dce4ed] bg-white p-2 shadow-[0_8px_30px_rgba(21,34,56,0.05)] focus-within:border-[#62a5e8] focus-within:ring-4 focus-within:ring-[#dcecff]">
@@ -236,11 +279,10 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                 key={zone.name}
                 onClick={() => setQuery(isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}` ? '' : `zone ${zone.name}`)}
                 aria-pressed={isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`}
-                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
-                  isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`
-                    ? 'border-[#0758a6] bg-[#0758a6] text-white'
-                    : 'border-[#dce4ed] bg-white text-[#5b6b80] hover:border-[#9fc6ec] hover:text-[#0758a6]'
-                }`}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition ${isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`
+                  ? 'border-[#0758a6] bg-[#0758a6] text-white'
+                  : 'border-[#dce4ed] bg-white text-[#5b6b80] hover:border-[#9fc6ec] hover:text-[#0758a6]'
+                  }`}
               >
                 Zone {zone.name}
               </button>
@@ -248,47 +290,46 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
           </div>
           <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
             <section className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><div className="mb-5 flex items-center justify-between"><div><h2 className="font-bold">{isSearching ? `Search results for "${query.trim()}"` : 'Car park zones'}</h2><p className="mt-1 text-xs text-[#7a899b]">{isSearching ? `${visible.length} of ${buses.length} buses match, best match first` : 'Select a bus to see walking directions'}</p></div><span className="flex items-center gap-1.5 text-xs font-semibold text-[#219363]"><span className="size-2.5 rounded-full bg-[#28aa70]" /> Updated now</span></div>
-          {isSearching && (
-            <div className="mb-5">
-              {visible.length === 0 ? (
-                <div className="rounded-xl border-2 border-dashed border-[#dce4ed] bg-[#f9fbfc] p-8 text-center">
-                  <Search className="mx-auto text-[#9aa7b7]" size={28} />
-                  <p className="mt-3 text-base font-bold">No buses match &quot;{query.trim()}&quot;</p>
-                  <p className="mt-1 text-sm text-[#6f7e91]">Try a bus number like <span className="font-bold text-[#0758a6]">07</span>, a route like <span className="font-bold text-[#0758a6]">igando</span>, or a spot like <span className="font-bold text-[#0758a6]">zone d</span>.</p>
-                  <button onClick={() => setQuery('')} className="mt-4 rounded-lg border border-[#dce4ed] bg-white px-3 py-2 text-sm font-bold text-[#0758a6] hover:bg-[#edf4fb]">Clear search</button>
+              {isSearching && (
+                <div className="mb-5">
+                  {visible.length === 0 ? (
+                    <div className="rounded-xl border-2 border-dashed border-[#dce4ed] bg-[#f9fbfc] p-8 text-center">
+                      <Search className="mx-auto text-[#9aa7b7]" size={28} />
+                      <p className="mt-3 text-base font-bold">No buses match &quot;{query.trim()}&quot;</p>
+                      <p className="mt-1 text-sm text-[#6f7e91]">Try a bus number like <span className="font-bold text-[#0758a6]">07</span>, a route like <span className="font-bold text-[#0758a6]">igando</span>, or a spot like <span className="font-bold text-[#0758a6]">zone d</span>.</p>
+                      <button onClick={() => setQuery('')} className="mt-4 rounded-lg border border-[#dce4ed] bg-white px-3 py-2 text-sm font-bold text-[#0758a6] hover:bg-[#edf4fb]">Clear search</button>
+                    </div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {visible.map((bus, index) => (
+                        <li key={bus.number}>
+                          <button
+                            onClick={() => {
+                              selectBus(bus)
+                              setViewingBus(bus)
+                            }}
+                            className={`flex w-full items-center justify-between rounded-xl border-2 p-3 text-left transition hover:border-[#4e9de3] hover:bg-[#eef7ff] ${selected.number === bus.number ? 'border-[#4e9de3] bg-[#eef7ff]' : 'border-[#dce4ed] bg-white'
+                              }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0758a6] text-sm font-extrabold text-white">{highlight(busLabel(bus))}</span>
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-bold">{highlight(bus.route)}</p>
+                                <p className={`text-xs ${isParked(bus) ? 'text-[#7a899b]' : 'font-semibold text-[#b8860b]'}`}>{isParked(bus) ? highlight(`Zone ${bus.zone} · Position ${pad2(bus.position)}`) : 'Not parked yet'}</p>
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 items-center gap-2">
+                              {index === 0 && <span className="rounded-full bg-[#e9f7f0] px-2 py-0.5 text-[10px] font-bold uppercase text-[#218d5e]">Best match</span>}
+                              <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-[#edf4fb] px-2 py-1 text-xs font-semibold text-[#0758a6]">View details</span>
+                              <ArrowRight size={16} className="text-[#9aa7b7]" />
+                            </div>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
-              ) : (
-                <ul className="space-y-2">
-                  {visible.map((bus, index) => (
-                    <li key={bus.number}>
-                      <button
-                        onClick={() => {
-                          selectBus(bus)
-                          setViewingBus(bus)
-                        }}
-                        className={`flex w-full items-center justify-between rounded-xl border-2 p-3 text-left transition hover:border-[#4e9de3] hover:bg-[#eef7ff] ${
-                          selected.number === bus.number ? 'border-[#4e9de3] bg-[#eef7ff]' : 'border-[#dce4ed] bg-white'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0758a6] text-sm font-extrabold text-white">{highlight(busLabel(bus))}</span>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-bold">{highlight(bus.route)}</p>
-                            <p className={`text-xs ${isParked(bus) ? 'text-[#7a899b]' : 'font-semibold text-[#b8860b]'}`}>{isParked(bus) ? highlight(`Zone ${bus.zone} · Position ${pad2(bus.position)}`) : 'Not parked yet'}</p>
-                          </div>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          {index === 0 && <span className="rounded-full bg-[#e9f7f0] px-2 py-0.5 text-[10px] font-bold uppercase text-[#218d5e]">Best match</span>}
-                          <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-[#edf4fb] px-2 py-1 text-xs font-semibold text-[#0758a6]">View details</span>
-                          <ArrowRight size={16} className="text-[#9aa7b7]" />
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}<div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{zoneList.map((zone) => {
+              )}<div className="grid grid-cols-2 gap-3 sm:grid-cols-3">{zoneList.map((zone) => {
                 const name = zone.name
                 const total = buses.filter((bus) => bus.zone === name).length
                 const matches = matchesPerZone[name] ?? 0
@@ -301,11 +342,10 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                     disabled={dimmed}
                     onClick={() => setViewingZone(zone)}
                     aria-label={`Zone ${name}, ${isSearching ? `${matches} matching of ${total}` : `${total} buses`} parked, ${zone.positions} positions. Click to view all buses in this zone.`}
-                    className={`min-h-32 rounded-xl border-2 p-4 text-left transition ${
-                      dimmed
-                        ? 'cursor-not-allowed border-[#e8edf2] bg-[#f7f9fb] opacity-45'
-                        : 'hover:-translate-y-0.5 hover:shadow-md'
-                    } ${selected.zone === name ? 'border-[#4e9de3] bg-[#eef7ff]' : 'border-[#dce4ed] bg-[#f9fbfc]'}`}
+                    className={`min-h-32 rounded-xl border-2 p-4 text-left transition ${dimmed
+                      ? 'cursor-not-allowed border-[#e8edf2] bg-[#f7f9fb] opacity-45'
+                      : 'hover:-translate-y-0.5 hover:shadow-md'
+                      } ${selected.zone === name ? 'border-[#4e9de3] bg-[#eef7ff]' : 'border-[#dce4ed] bg-[#f9fbfc]'}`}
                   >
                     <div className="flex items-start justify-between">
                       <span className="flex size-9 items-center justify-center rounded-lg bg-[#0758a6] text-lg font-extrabold text-white">{name}</span>
@@ -600,13 +640,12 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
               key={slot}
               aria-current={isMine ? 'true' : undefined}
               title={isMine ? `Bus ${pad2(bus.number)} is here` : taken ? `Bus ${pad2(taken)}` : 'Empty'}
-              className={`flex aspect-square items-center justify-center rounded-lg text-xs font-extrabold tabular-nums transition ${
-                isMine
-                  ? 'bg-[#0758a6] text-white shadow-[0_2px_8px_rgba(7,88,166,0.35)] ring-2 ring-[#0758a6] ring-offset-1'
-                  : taken
-                    ? 'bg-[#9aa7b7] text-white'
-                    : 'bg-[#eef2f6] text-[#a3afbd]'
-              }`}
+              className={`flex aspect-square items-center justify-center rounded-lg text-xs font-extrabold tabular-nums transition ${isMine
+                ? 'bg-[#0758a6] text-white shadow-[0_2px_8px_rgba(7,88,166,0.35)] ring-2 ring-[#0758a6] ring-offset-1'
+                : taken
+                  ? 'bg-[#9aa7b7] text-white'
+                  : 'bg-[#eef2f6] text-[#a3afbd]'
+                }`}
             >
               {pad2(slot)}
             </li>
@@ -671,9 +710,8 @@ function BusDetailsDialog({
                   Bus {pad2(bus.number)}
                 </h2>
                 <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                    parked ? 'bg-[#e9f7f0] text-[#218d5e]' : 'bg-[#fdf3d8] text-[#b8860b]'
-                  }`}
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${parked ? 'bg-[#e9f7f0] text-[#218d5e]' : 'bg-[#fdf3d8] text-[#b8860b]'
+                    }`}
                 >
                   {parked ? 'Parked' : 'Not parked yet'}
                 </span>
@@ -694,9 +732,8 @@ function BusDetailsDialog({
         <div className="flex-1 space-y-4 overflow-y-auto overscroll-contain p-5">
           {/* Location status card */}
           <div
-            className={`rounded-2xl border p-4.5 ${
-              parked ? 'border-[#b9dbf8] bg-[#edf4fb]' : 'border-[#fae3ad] bg-[#fdf8ea]'
-            }`}
+            className={`rounded-2xl border p-4.5 ${parked ? 'border-[#b9dbf8] bg-[#edf4fb]' : 'border-[#fae3ad] bg-[#fdf8ea]'
+              }`}
           >
             <p className="text-xs font-bold uppercase tracking-wider text-[#6c7d91]">Current Location</p>
             <p className={`mt-1 text-2xl font-extrabold ${parked ? 'text-[#0758a6]' : 'text-[#b8860b]'}`}>
@@ -864,11 +901,10 @@ function ZoneDetailsDialog({
                         if (busInSlot) onSelectBus(busInSlot)
                       }}
                       title={busInSlot ? `Bus ${pad2(busInSlot.number)} (${busInSlot.route})` : `Slot ${pad2(slot)} empty`}
-                      className={`flex aspect-square w-full flex-col items-center justify-center rounded-lg text-xs font-bold tabular-nums transition ${
-                        busInSlot
-                          ? 'cursor-pointer bg-[#0758a6] text-white shadow-sm ring-1 ring-[#0758a6] hover:bg-[#064984]'
-                          : 'cursor-default bg-[#eef2f6] text-[#9aa7b7]'
-                      }`}
+                      className={`flex aspect-square w-full flex-col items-center justify-center rounded-lg text-xs font-bold tabular-nums transition ${busInSlot
+                        ? 'cursor-pointer bg-[#0758a6] text-white shadow-sm ring-1 ring-[#0758a6] hover:bg-[#064984]'
+                        : 'cursor-default bg-[#eef2f6] text-[#9aa7b7]'
+                        }`}
                     >
                       <span className="leading-tight">{pad2(slot)}</span>
                       {busInSlot && (
