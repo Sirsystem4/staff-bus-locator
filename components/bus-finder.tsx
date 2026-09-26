@@ -208,7 +208,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
           <div className="flex shrink-0 items-center gap-2">
             {/* <span className="hidden items-center gap-1.5 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-2.5 py-1 text-xs font-semibold text-[#166534] md:flex" title="Realtime synchronized with Supabase database">
               <span className={`size-2 rounded-full ${isLiveConnected ? 'bg-[#22c55e] animate-pulse' : 'bg-[#eab308]'}`} />
-              {isLiveConnected ? 'Supabase live' : 'Reconnecting...'}
+              {isLiveConnected ? 'Supabase live Now' : 'Reconnecting...'}
             </span> */}
             <button
               onClick={() => {
@@ -225,11 +225,10 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                   if (currentBus) selectBus(currentBus)
                 }
               }}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:px-3 sm:py-2 sm:text-sm ${
-                loggedIn && mode === 'admin'
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:px-3 sm:py-2 sm:text-sm ${loggedIn && mode === 'admin'
                   ? 'border-[#0758a6] bg-[#edf4fb] text-[#0758a6]'
                   : 'border-[#dce4ed] bg-white text-[#516176] hover:bg-[#f5f7fa] hover:text-[#0758a6]'
-              }`}
+                }`}
             >
               {loggedIn && mode === 'admin' ? (
                 <>
