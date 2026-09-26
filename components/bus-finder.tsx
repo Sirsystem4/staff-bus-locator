@@ -195,9 +195,17 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
   return (
     <main className="min-h-screen bg-[#f5f7fa] text-[#17263d]">
       <header className="border-b border-[#dce4ed] bg-white">
-        <div className="mx-auto flex max-w-[1360px] items-center justify-between px-5 py-4 lg:px-10">
-          <div className="flex items-center gap-3"><div className="flex size-10 items-center justify-center rounded-xl bg-[#0758a6] text-white"><BusFront size={23} /></div><div><p className="text-lg font-bold tracking-tight">Staff Bus Finder</p><p className="text-xs text-[#738297]">Main car park · Manual location updates</p></div></div>
-          <div className="flex items-center gap-2">
+        <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4 px-4 py-3.5 sm:px-5 sm:py-4 lg:px-10">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#0758a6] text-white">
+              <BusFront size={23} />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-base font-bold tracking-tight sm:text-lg">Staff Bus Finder</p>
+              <p className="truncate text-xs text-[#738297]">Main car park · Manual location updates</p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2">
             {/* <span className="hidden items-center gap-1.5 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-2.5 py-1 text-xs font-semibold text-[#166534] md:flex" title="Realtime synchronized with Supabase database">
               <span className={`size-2 rounded-full ${isLiveConnected ? 'bg-[#22c55e] animate-pulse' : 'bg-[#eab308]'}`} />
               {isLiveConnected ? 'Supabase live' : 'Reconnecting...'}
@@ -217,10 +225,11 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                   if (currentBus) selectBus(currentBus)
                 }
               }}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:px-3 sm:py-2 sm:text-sm ${loggedIn && mode === 'admin'
-                ? 'border-[#0758a6] bg-[#edf4fb] text-[#0758a6]'
-                : 'border-[#dce4ed] bg-white text-[#516176] hover:bg-[#f5f7fa] hover:text-[#0758a6]'
-                }`}
+              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:px-3 sm:py-2 sm:text-sm ${
+                loggedIn && mode === 'admin'
+                  ? 'border-[#0758a6] bg-[#edf4fb] text-[#0758a6]'
+                  : 'border-[#dce4ed] bg-white text-[#516176] hover:bg-[#f5f7fa] hover:text-[#0758a6]'
+              }`}
             >
               {loggedIn && mode === 'admin' ? (
                 <>
@@ -229,12 +238,19 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                 </>
               ) : (
                 <>
-                  <ShieldCheck size={16} />
+                  {/* <ShieldCheck size={16} /> */}
                   <span>{loggedIn ? 'Admin panel' : 'Transport admin'}</span>
                 </>
               )}
             </button>
-            <button onClick={() => setShowHelp(true)} aria-label="Help" title="Help and usage guide" className="rounded-lg p-2 text-[#718096] hover:bg-[#f1f5f9] hidden md:flex"><CircleHelp size={19} /></button>
+            <button
+              onClick={() => setShowHelp(true)}
+              aria-label="Help"
+              title="Help and usage guide"
+              className="hidden rounded-lg p-2 text-[#718096] hover:bg-[#f1f5f9] md:flex"
+            >
+              <CircleHelp size={19} />
+            </button>
           </div>
         </div>
       </header>
