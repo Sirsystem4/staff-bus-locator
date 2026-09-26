@@ -234,7 +234,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                 </>
               )}
             </button>
-            <button onClick={() => setShowHelp(true)} aria-label="Help" title="Help and usage guide" className="rounded-lg p-2 text-[#718096] hover:bg-[#f1f5f9]"><CircleHelp size={19} /></button>
+            <button onClick={() => setShowHelp(true)} aria-label="Help" title="Help and usage guide" className="rounded-lg p-2 text-[#718096] hover:bg-[#f1f5f9] hidden md:flex"><CircleHelp size={19} /></button>
           </div>
         </div>
       </header>
