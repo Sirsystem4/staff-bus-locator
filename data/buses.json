@@ -1,0 +1,56 @@
+[
+  {
+    "number": 1,
+    "route": "AGEGE",
+    "zone": "A",
+    "position": 4
+  },
+  {
+    "number": 3,
+    "route": "IJAYE",
+    "zone": null,
+    "position": null
+  },
+  {
+    "number": 6,
+    "route": "OYINGBO",
+    "zone": "B",
+    "position": 3
+  },
+  {
+    "number": 7,
+    "route": "IGANDO",
+    "zone": null,
+    "position": null
+  },
+  {
+    "number": 10,
+    "route": "ODOGUNYAN",
+    "zone": null,
+    "position": null
+  },
+  {
+    "number": 20,
+    "route": "MILE 2",
+    "zone": null,
+    "position": null
+  },
+  {
+    "number": 36,
+    "route": "IMOTA",
+    "zone": null,
+    "position": null
+  },
+  {
+    "number": 41,
+    "route": "GBERIGBE",
+    "zone": "A",
+    "position": 3
+  },
+  {
+    "number": 42,
+    "route": "EGBEDA",
+    "zone": "C",
+    "position": 2
+  }
+]

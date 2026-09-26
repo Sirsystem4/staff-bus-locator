@@ -1,0 +1,32 @@
+{
+  "zones": [
+    {
+      "name": "A",
+      "positions": 5
+    },
+    {
+      "name": "B",
+      "positions": 5
+    },
+    {
+      "name": "C",
+      "positions": 5
+    },
+    {
+      "name": "D",
+      "positions": 5
+    },
+    {
+      "name": "E",
+      "positions": 5
+    },
+    {
+      "name": "F",
+      "positions": 5
+    },
+    {
+      "name": "G",
+      "positions": 5
+    }
+  ]
+}
