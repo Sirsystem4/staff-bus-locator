@@ -41,72 +41,75 @@
     </linearGradient>
   </defs>
 
-  <!-- 3D Ground Shadow -->
-  <rect x="14" y="12" width="72" height="130" rx="18" fill="#000000" opacity="0.18" filter="url(#bus-shadow)" />
+  <!-- Rotate 180 to face entrance (downward) -->
+  <g transform="rotate(180 50 75)">
+    <!-- 3D Ground Shadow -->
+    <rect x="14" y="12" width="72" height="130" rx="18" fill="#000000" opacity="0.18" filter="url(#bus-shadow)" />
 
-  <!-- Tires (peeking at sides) -->
-  <rect x="8" y="26" width="6" height="18" rx="2.5" fill="#1e293b" />
-  <rect x="86" y="26" width="6" height="18" rx="2.5" fill="#1e293b" />
-  <rect x="8" y="104" width="6" height="18" rx="2.5" fill="#1e293b" />
-  <rect x="86" y="104" width="6" height="18" rx="2.5" fill="#1e293b" />
+    <!-- Tires (peeking at sides) -->
+    <rect x="8" y="26" width="6" height="18" rx="2.5" fill="#1e293b" />
+    <rect x="86" y="26" width="6" height="18" rx="2.5" fill="#1e293b" />
+    <rect x="8" y="104" width="6" height="18" rx="2.5" fill="#1e293b" />
+    <rect x="86" y="104" width="6" height="18" rx="2.5" fill="#1e293b" />
 
-  <!-- Side Mirrors -->
-  <path d="M 12 28 Q 7 28 6 34 Q 6 36 12 34 Z" fill="#1e40af" />
-  <circle cx="8" cy="33" r="1.5" fill="#93c5fd" />
-  <path d="M 88 28 Q 93 28 94 34 Q 94 36 88 34 Z" fill="#1e40af" />
-  <circle cx="92" cy="33" r="1.5" fill="#93c5fd" />
+    <!-- Side Mirrors -->
+    <path d="M 12 28 Q 7 28 6 34 Q 6 36 12 34 Z" fill="#1e40af" />
+    <circle cx="8" cy="33" r="1.5" fill="#93c5fd" />
+    <path d="M 88 28 Q 93 28 94 34 Q 94 36 88 34 Z" fill="#1e40af" />
+    <circle cx="92" cy="33" r="1.5" fill="#93c5fd" />
 
-  <!-- 3D Lower Body Extrusion (Depth) -->
-  <rect x="12" y="14" width="76" height="126" rx="16" fill="url(#blue-extrusion)" />
+    <!-- 3D Lower Body Extrusion (Depth) -->
+    <rect x="12" y="14" width="76" height="126" rx="16" fill="url(#blue-extrusion)" />
 
-  <!-- Main 3D Bus Body Upper Surface -->
-  <rect x="12" y="10" width="76" height="126" rx="16" fill="url(#blue-body)" stroke="#60a5fa" stroke-width="1.2" />
+    <!-- Main 3D Bus Body Upper Surface -->
+    <rect x="12" y="10" width="76" height="126" rx="16" fill="url(#blue-body)" stroke="#60a5fa" stroke-width="1.2" />
 
-  <!-- Front Windshield (Top) -->
-  <path d="M 21 27 C 21 21, 28 17, 50 17 C 72 17, 79 21, 79 27 L 77 37 C 77 39, 74 41, 50 41 C 26 41, 23 39, 23 37 Z" fill="url(#glass-front)" stroke="#1d4ed8" stroke-width="0.8" />
-  <!-- Windshield Reflection Glare -->
-  <path d="M 24 24 C 28 20, 40 18, 50 18 L 48 39 C 32 39, 26 36, 24 24 Z" fill="url(#glass-glare)" opacity="0.4" />
-  <!-- Windshield Wipers -->
-  <line x1="38" y1="38" x2="48" y2="30" stroke="#0f172a" stroke-width="1" stroke-linecap="round" />
-  <line x1="56" y1="38" x2="66" y2="30" stroke="#0f172a" stroke-width="1" stroke-linecap="round" />
+    <!-- Front Windshield (Facing Entrance) -->
+    <path d="M 21 27 C 21 21, 28 17, 50 17 C 72 17, 79 21, 79 27 L 77 37 C 77 39, 74 41, 50 41 C 26 41, 23 39, 23 37 Z" fill="url(#glass-front)" stroke="#1d4ed8" stroke-width="0.8" />
+    <!-- Windshield Reflection Glare -->
+    <path d="M 24 24 C 28 20, 40 18, 50 18 L 48 39 C 32 39, 26 36, 24 24 Z" fill="url(#glass-glare)" opacity="0.4" />
+    <!-- Windshield Wipers -->
+    <line x1="38" y1="38" x2="48" y2="30" stroke="#0f172a" stroke-width="1" stroke-linecap="round" />
+    <line x1="56" y1="38" x2="66" y2="30" stroke="#0f172a" stroke-width="1" stroke-linecap="round" />
 
-  <!-- Side Windows (Left) -->
-  <rect x="15" y="44" width="5" height="15" rx="1.5" fill="#0f172a" />
-  <rect x="15" y="62" width="5" height="15" rx="1.5" fill="#0f172a" />
-  <rect x="15" y="80" width="5" height="15" rx="1.5" fill="#0f172a" />
-  <rect x="15" y="98" width="5" height="15" rx="1.5" fill="#0f172a" />
+    <!-- Side Windows (Left) -->
+    <rect x="15" y="44" width="5" height="15" rx="1.5" fill="#0f172a" />
+    <rect x="15" y="62" width="5" height="15" rx="1.5" fill="#0f172a" />
+    <rect x="15" y="80" width="5" height="15" rx="1.5" fill="#0f172a" />
+    <rect x="15" y="98" width="5" height="15" rx="1.5" fill="#0f172a" />
 
-  <!-- Side Windows (Right) -->
-  <rect x="80" y="44" width="5" height="15" rx="1.5" fill="#0f172a" />
-  <rect x="80" y="62" width="5" height="15" rx="1.5" fill="#0f172a" />
-  <rect x="80" y="80" width="5" height="15" rx="1.5" fill="#0f172a" />
-  <rect x="80" y="98" width="5" height="15" rx="1.5" fill="#0f172a" />
+    <!-- Side Windows (Right) -->
+    <rect x="80" y="44" width="5" height="15" rx="1.5" fill="#0f172a" />
+    <rect x="80" y="62" width="5" height="15" rx="1.5" fill="#0f172a" />
+    <rect x="80" y="80" width="5" height="15" rx="1.5" fill="#0f172a" />
+    <rect x="80" y="98" width="5" height="15" rx="1.5" fill="#0f172a" />
 
-  <!-- Rear Window (Bottom) -->
-  <path d="M 24 122 C 24 125, 32 128, 50 128 C 68 128, 76 125, 76 122 L 74 117 C 74 116, 68 115, 50 115 C 32 115, 26 116, 26 117 Z" fill="url(#glass-front)" />
+    <!-- Rear Window (Top when rotated) -->
+    <path d="M 24 122 C 24 125, 32 128, 50 128 C 68 128, 76 125, 76 122 L 74 117 C 74 116, 68 115, 50 115 C 32 115, 26 116, 26 117 Z" fill="url(#glass-front)" />
 
-  <!-- Roof Island / Bevel -->
-  <rect x="23" y="44" width="54" height="69" rx="8" fill="url(#blue-roof)" stroke="#93c5fd" stroke-width="0.75" />
+    <!-- Roof Island / Bevel -->
+    <rect x="23" y="44" width="54" height="69" rx="8" fill="url(#blue-roof)" stroke="#93c5fd" stroke-width="0.75" />
 
-  <!-- Rooftop Ribbed Detailing -->
-  <line x1="28" y1="52" x2="72" y2="52" stroke="#1e40af" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
-  <line x1="28" y1="58" x2="72" y2="58" stroke="#1e40af" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
+    <!-- Rooftop Ribbed Detailing -->
+    <line x1="28" y1="52" x2="72" y2="52" stroke="#1e40af" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
+    <line x1="28" y1="58" x2="72" y2="58" stroke="#1e40af" stroke-width="1.2" stroke-linecap="round" opacity="0.6" />
 
-  <!-- Rooftop AC / Vent Unit -->
-  <rect x="33" y="66" width="34" height="22" rx="4" fill="url(#ac-unit)" stroke="#1d4ed8" stroke-width="1" />
-  <!-- AC Vents -->
-  <line x1="38" y1="72" x2="62" y2="72" stroke="#172554" stroke-width="1.2" stroke-linecap="round" />
-  <line x1="38" y1="77" x2="62" y2="77" stroke="#172554" stroke-width="1.2" stroke-linecap="round" />
-  <line x1="38" y1="82" x2="62" y2="82" stroke="#172554" stroke-width="1.2" stroke-linecap="round" />
+    <!-- Rooftop AC / Vent Unit -->
+    <rect x="33" y="66" width="34" height="22" rx="4" fill="url(#ac-unit)" stroke="#1d4ed8" stroke-width="1" />
+    <!-- AC Vents -->
+    <line x1="38" y1="72" x2="62" y2="72" stroke="#172554" stroke-width="1.2" stroke-linecap="round" />
+    <line x1="38" y1="77" x2="62" y2="77" stroke="#172554" stroke-width="1.2" stroke-linecap="round" />
+    <line x1="38" y1="82" x2="62" y2="82" stroke="#172554" stroke-width="1.2" stroke-linecap="round" />
 
-  <!-- Rooftop Escape Hatch -->
-  <rect x="37" y="95" width="26" height="13" rx="2.5" fill="#2563eb" stroke="#93c5fd" stroke-width="0.8" />
+    <!-- Rooftop Escape Hatch -->
+    <rect x="37" y="95" width="26" height="13" rx="2.5" fill="#2563eb" stroke="#93c5fd" stroke-width="0.8" />
 
-  <!-- Front Headlights (Top) -->
-  <ellipse cx="20" cy="13" rx="3.5" ry="2" fill="#fef08a" />
-  <ellipse cx="80" cy="13" rx="3.5" ry="2" fill="#fef08a" />
+    <!-- Headlights (Facing Entrance) -->
+    <ellipse cx="20" cy="13" rx="3.5" ry="2" fill="#fef08a" />
+    <ellipse cx="80" cy="13" rx="3.5" ry="2" fill="#fef08a" />
 
-  <!-- Rear Taillights (Bottom) -->
-  <rect x="18" y="133" width="7" height="2.5" rx="1" fill="#ef4444" />
-  <rect x="75" y="133" width="7" height="2.5" rx="1" fill="#ef4444" />
+    <!-- Rear Taillights -->
+    <rect x="18" y="133" width="7" height="2.5" rx="1" fill="#ef4444" />
+    <rect x="75" y="133" width="7" height="2.5" rx="1" fill="#ef4444" />
+  </g>
 </svg>

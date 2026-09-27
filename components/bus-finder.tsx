@@ -384,7 +384,61 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
         <footer className="mt-8 flex flex-col gap-2 text-xs text-[#8491a1] sm:flex-row sm:items-center sm:justify-between"><p>Locations are updated by authorized Transport/Admin staff.</p><div className="flex flex-wrap items-center gap-x-4 gap-y-1"><p>Car park layout · {zoneList.length} zone{zoneList.length === 1 ? '' : 's'} ({zoneList.map((zone) => zone.name).join(', ')}) · {zoneList.reduce((sum, zone) => sum + zone.positions, 0)} positions</p><a href="/super-admin" className="font-semibold text-[#6b7a8d] underline-offset-2 hover:text-[#0758a6] hover:underline">Super admin</a></div></footer>
       </div>
 
-      {showLogin && <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#17263d]/35 p-5"><div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl"><div className="flex items-start justify-between"><div><div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-[#e9f2fc] text-[#0758a6]"><KeyRound size={20} /></div><h2 className="text-xl font-bold">Admin sign in</h2><p className="mt-1 text-sm text-[#718095]">Enter the 4-digit transport admin code to update bus locations.</p></div><button onClick={() => setShowLogin(false)} aria-label="Close login"><X className="text-[#8190a1]" /></button></div><form onSubmit={signIn} className="mt-6"><label className="block text-sm font-bold">Access code<input autoFocus value={adminCode} onChange={(e) => { setAdminCode(e.target.value.replace(/\D/g, '').slice(0, 4)); setAuthError('') }} inputMode="numeric" autoComplete="one-time-code" maxLength={4} placeholder="••••" aria-invalid={authError ? true : undefined} className={`mt-2 w-full rounded-xl border bg-white px-3 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none ${authError ? 'border-[#d9534f]' : 'border-[#d6e0ea] focus:border-[#4e9de3]'}`} /></label>{authError && <p role="alert" className="mt-2 text-sm font-semibold text-[#c0392b]">{authError}</p>}<button type="submit" disabled={adminCode.length !== 4 || verifying} className="mt-5 w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white hover:bg-[#064984] disabled:cursor-not-allowed disabled:opacity-40">{verifying ? 'Checking...' : 'Continue as admin'}</button></form></div></div>}
+      {showLogin && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center bg-[#17263d]/35 p-5">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="mb-3 flex size-10 items-center justify-center rounded-xl bg-[#e9f2fc] text-[#0758a6]">
+                  <KeyRound size={20} />
+                </div>
+                <h2 className="text-xl font-bold">Admin sign in</h2>
+                <p className="mt-1 text-sm text-[#718095]">Enter the 4-digit transport admin code to update bus locations.</p>
+              </div>
+              <button onClick={() => setShowLogin(false)} aria-label="Close login">
+                <X className="text-[#8190a1]" />
+              </button>
+            </div>
+            <form onSubmit={signIn} className="mt-6">
+              <label className="block text-sm font-bold">
+                Access code
+                <input
+                  autoFocus
+                  value={adminCode}
+                  onChange={(e) => {
+                    setAdminCode(e.target.value.replace(/\D/g, '').slice(0, 4))
+                    setAuthError('')
+                  }}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={4}
+                  placeholder="••••"
+                  aria-invalid={authError ? true : undefined}
+                  className={`mt-2 w-full rounded-xl border bg-white px-3 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none ${
+                    authError ? 'border-[#d9534f]' : 'border-[#d6e0ea] focus:border-[#4e9de3]'
+                  }`}
+                />
+              </label>
+              {authError && <p role="alert" className="mt-2 text-sm font-semibold text-[#c0392b]">{authError}</p>}
+              <button
+                type="submit"
+                disabled={adminCode.length !== 4 || verifying}
+                className="mt-5 w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {verifying ? 'Checking...' : 'Continue as admin'}
+              </button>
+            </form>
+            <div className="mt-4 border-t border-[#edf2f7] pt-3 text-center">
+              <a
+                href="/super-admin"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[#0758a6] transition hover:underline"
+              >
+                <ShieldCheck size={14} /> Need Super Admin? Open Bus Register & Zones →
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showHelp && (
         <div className="fixed inset-0 z-30 flex items-center justify-center bg-[#17263d]/40 p-4">
@@ -620,10 +674,10 @@ function AdminPanel({
 
 /**
  * Visual position map for the selected bus's zone.
- * Renders a vertical column of 3D miniature buses matching the user's design:
- * - Total buses = zone.positions
- * - Selected bus position is blue
- * - Other slots/buses are grey
+ * Renders only the buses parked in this zone, facing the entrance (downward):
+ * - Number of 3D buses = number of buses parked in this zone
+ * - Selected bus is blue
+ * - Other parked buses in the zone are grey
  * - Labeled with "Zone [name]" and "Entrance" at the bottom
  */
 function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: Layout }) {
@@ -633,8 +687,15 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
   const zone = findZone(layout, zoneName)
   if (!zone) return null
 
-  // Map slots in the zone (1 to zone.positions)
-  const slots = Array.from({ length: zone.positions }, (_, index) => index + 1)
+  // Buses parked in this zone, sorted by position
+  let parkedInZone = buses
+    .filter((b) => b.zone === zoneName && b.position !== null)
+    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+
+  // Ensure current bus is present
+  if (!parkedInZone.some((b) => b.number === bus.number)) {
+    parkedInZone = [...parkedInZone, bus].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+  }
 
   return (
     <div className="mt-5 border-t border-[#eef2f6] pt-5">
@@ -644,31 +705,28 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
             Zone {zone.name} Parking Map
           </p>
           <p className="text-[11px] text-[#8b98a8]">
-            Position {pad2(position)} of {zone.positions}
+            {parkedInZone.length} bus{parkedInZone.length === 1 ? '' : 'es'} parked in Zone {zone.name}
           </p>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#edf4fb] px-2.5 py-1 text-xs font-bold text-[#0758a6]">
           <span className="size-2 rounded-full bg-[#2563eb]" />
-          Bus #{pad2(bus.number)}
+          Bus #{pad2(bus.number)} · Pos {pad2(position)}
         </span>
       </div>
 
       {/* Map Card */}
       <div className="flex flex-col items-center justify-center rounded-2xl border border-[#dce4ed] bg-[#fbfcfd] px-4 py-7 shadow-xs">
-        {/* Vertical column of 3D Miniature Buses */}
-        <div className="flex flex-col items-center gap-3">
-          {slots.map((slot) => {
-            const isTarget = slot === position
-            const otherBusInSlot = buses.find(
-              (b) => b.zone === zoneName && b.position === slot && b.number !== bus.number
-            )
+        {/* Vertical column of 3D Miniature Buses - only for parked buses in this zone */}
+        <div className="flex flex-col items-center gap-3.5">
+          {parkedInZone.map((parkedBus) => {
+            const isTarget = parkedBus.number === bus.number
 
             return (
               <div
-                key={slot}
+                key={parkedBus.number}
                 className="group relative flex items-center justify-center"
               >
-                {/* 3D Miniature Bus SVG Image */}
+                {/* 3D Miniature Bus SVG Image (Facing Entrance / Downward) */}
                 <div
                   className={`relative flex items-center justify-center transition-transform duration-200 ${
                     isTarget ? 'z-10 scale-105' : 'opacity-90 hover:scale-102 hover:opacity-100'
@@ -678,10 +736,8 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
                     src={isTarget ? '/mini-bus-blue.svg' : '/mini-bus-grey.svg'}
                     alt={
                       isTarget
-                        ? `Selected Bus ${pad2(bus.number)} at position ${pad2(slot)}`
-                        : otherBusInSlot
-                        ? `Bus ${pad2(otherBusInSlot.number)} at position ${pad2(slot)}`
-                        : `Slot ${pad2(slot)}`
+                        ? `Selected Bus ${pad2(parkedBus.number)} at Position ${pad2(parkedBus.position!)}`
+                        : `Bus ${pad2(parkedBus.number)} at Position ${pad2(parkedBus.position!)}`
                     }
                     className={`h-20 w-14 object-contain transition-all ${
                       isTarget
@@ -690,31 +746,32 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
                     }`}
                   />
 
-                  {/* Slot Number Label on the Roof */}
+                  {/* Bus Number Label on the Roof */}
                   <span
                     className={`pointer-events-none absolute text-[10px] font-extrabold tracking-wider ${
-                      isTarget ? 'text-white' : 'text-[#475569]'
+                      isTarget ? 'text-white' : 'text-[#334155]'
                     }`}
                   >
-                    {pad2(slot)}
+                    #{pad2(parkedBus.number)}
                   </span>
                 </div>
 
-                {/* Subtle Position / Bus indicator on the right */}
-                <div className="absolute left-[calc(100%+12px)] flex items-center whitespace-nowrap">
-                  <span
-                    className={`rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums transition ${
+                {/* Position and Route indicator on the side */}
+                <div className="absolute left-[calc(100%+14px)] flex items-center whitespace-nowrap">
+                  <div
+                    className={`flex flex-col rounded-md px-2 py-0.5 text-left text-xs transition ${
                       isTarget
                         ? 'bg-[#0758a6] text-white shadow-xs'
-                        : 'bg-[#eef2f6] text-[#64748b] opacity-80 group-hover:opacity-100'
+                        : 'bg-[#eef2f6] text-[#475569] opacity-85 group-hover:opacity-100'
                     }`}
                   >
-                    {isTarget
-                      ? `Bus #${pad2(bus.number)}`
-                      : otherBusInSlot
-                      ? `Bus #${pad2(otherBusInSlot.number)}`
-                      : `Slot ${pad2(slot)}`}
-                  </span>
+                    <span className="font-extrabold tabular-nums">
+                      Pos {pad2(parkedBus.position!)}
+                    </span>
+                    <span className={`text-[10px] truncate max-w-[120px] ${isTarget ? 'text-[#bfdbfe]' : 'text-[#64748b]'}`}>
+                      {parkedBus.route}
+                    </span>
+                  </div>
                 </div>
               </div>
             )

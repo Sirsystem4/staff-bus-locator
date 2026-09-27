@@ -23,9 +23,17 @@ const blankZone = (): Zone => ({ name: '', positions: 20 })
 type ScrollTarget = React.RefObject<HTMLElement | HTMLFormElement | null>
 type FieldTarget = React.RefObject<HTMLInputElement | null>
 
-export default function SuperAdminPanel({ initialBuses, initialLayout }: { initialBuses: Bus[]; initialLayout: Layout }) {
-  const [buses, setBuses] = useState<Bus[]>(initialBuses)
-  const [layout, setLayout] = useState<Layout>(initialLayout)
+export default function SuperAdminPanel({
+  initialBuses = [],
+  initialLayout = { zones: [] },
+}: {
+  initialBuses?: Bus[]
+  initialLayout?: Layout
+}) {
+  const safeBuses = Array.isArray(initialBuses) ? initialBuses : []
+  const safeLayout = initialLayout && Array.isArray(initialLayout.zones) ? initialLayout : { zones: [] }
+  const [buses, setBuses] = useState<Bus[]>(safeBuses)
+  const [layout, setLayout] = useState<Layout>(safeLayout)
   const [unlocked, setUnlocked] = useState(false)
   const [code, setCode] = useState('')
   const [authError, setAuthError] = useState('')
@@ -36,12 +44,20 @@ export default function SuperAdminPanel({ initialBuses, initialLayout }: { initi
     const channel = supabase
       .channel('super-admin-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'buses' }, async () => {
-        const fresh = await getBuses()
-        setBuses(fresh)
+        try {
+          const fresh = await getBuses()
+          if (Array.isArray(fresh)) setBuses(fresh)
+        } catch (e) {
+          console.error('Realtime bus fetch error:', e)
+        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'zones' }, async () => {
-        const fresh = await getLayout()
-        setLayout(fresh)
+        try {
+          const fresh = await getLayout()
+          if (fresh && Array.isArray(fresh.zones)) setLayout(fresh)
+        } catch (e) {
+          console.error('Realtime layout fetch error:', e)
+        }
       })
       .subscribe()
 
@@ -51,7 +67,7 @@ export default function SuperAdminPanel({ initialBuses, initialLayout }: { initi
   }, [])
 
   const [editing, setEditing] = useState<number | null>(null)
-  const [draft, setDraft] = useState<BusDraft>(blankDraft(nextBusNumber(initialBuses)))
+  const [draft, setDraft] = useState<BusDraft>(blankDraft(nextBusNumber(safeBuses)))
   const [formError, setFormError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
@@ -254,9 +270,9 @@ export default function SuperAdminPanel({ initialBuses, initialLayout }: { initi
     )
   }
 
-  const parked = buses.filter((bus) => bus.zone !== null).length
-  const zoneCounts = layout.zones.map((zone) => ({ ...zone, count: busesInZone(zone.name) }))
-  const totalPositions = layout.zones.reduce((sum, zone) => sum + zone.positions, 0)
+  const parked = (buses || []).filter((bus) => bus.zone !== null).length
+  const zoneCounts = (layout?.zones || []).map((zone) => ({ ...zone, count: busesInZone(zone.name) }))
+  const totalPositions = (layout?.zones || []).reduce((sum, zone) => sum + (zone.positions || 0), 0)
 
   return (
     <main className="min-h-screen bg-[#f5f7fa] text-[#17263d]">
