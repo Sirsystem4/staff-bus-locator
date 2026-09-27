@@ -619,8 +619,12 @@ function AdminPanel({
 }
 
 /**
- * Visual position map for the selected bus's zone. Driven entirely by the layout
- * and the stored position, so it reflects whatever the admin last recorded.
+ * Visual position map for the selected bus's zone.
+ * Renders a vertical column of 3D miniature buses matching the user's design:
+ * - Total buses = zone.positions
+ * - Selected bus position is blue
+ * - Other slots/buses are grey
+ * - Labeled with "Zone [name]" and "Entrance" at the bottom
  */
 function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: Layout }) {
   if (!isParked(bus)) return null
@@ -629,54 +633,115 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
   const zone = findZone(layout, zoneName)
   if (!zone) return null
 
-  // Other buses sharing this zone, so their slots can be shown as occupied.
-  const takenBy = new Map<number, number>()
-  for (const other of buses) {
-    if (other.zone !== zoneName || other.number === bus.number || other.position === null) continue
-    takenBy.set(other.position, other.number)
-  }
-
+  // Map slots in the zone (1 to zone.positions)
   const slots = Array.from({ length: zone.positions }, (_, index) => index + 1)
-  const occupiedCount = takenBy.size
 
   return (
-    <div className="mt-5 border-t border-[#eef2f6] pt-4">
-      <div className="mb-3 flex items-baseline justify-between gap-2">
-        <p className="text-xs font-bold uppercase tracking-wider text-[#6c7d91]">Position map · Zone {zone.name}</p>
-        <span className="text-[11px] font-semibold text-[#8b98a8]">{zone.positions} positions</span>
+    <div className="mt-5 border-t border-[#eef2f6] pt-5">
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-[#6c7d91]">
+            Zone {zone.name} Parking Map
+          </p>
+          <p className="text-[11px] text-[#8b98a8]">
+            Position {pad2(position)} of {zone.positions}
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#edf4fb] px-2.5 py-1 text-xs font-bold text-[#0758a6]">
+          <span className="size-2 rounded-full bg-[#2563eb]" />
+          Bus #{pad2(bus.number)}
+        </span>
       </div>
 
-      <ul className="grid grid-cols-5 gap-1.5 sm:grid-cols-6" aria-label={`Position map for zone ${zone.name}`}>
-        {slots.map((slot) => {
-          const isMine = slot === position
-          const taken = takenBy.get(slot)
-          return (
-            <li
-              key={slot}
-              aria-current={isMine ? 'true' : undefined}
-              title={isMine ? `Bus ${pad2(bus.number)} is here` : taken ? `Bus ${pad2(taken)}` : 'Empty'}
-              className={`flex aspect-square items-center justify-center rounded-lg text-xs font-extrabold tabular-nums transition ${isMine
-                ? 'bg-[#0758a6] text-white shadow-[0_2px_8px_rgba(7,88,166,0.35)] ring-2 ring-[#0758a6] ring-offset-1'
-                : taken
-                  ? 'bg-[#9aa7b7] text-white'
-                  : 'bg-[#eef2f6] text-[#a3afbd]'
-                }`}
-            >
-              {pad2(slot)}
-            </li>
-          )
-        })}
-      </ul>
+      {/* Map Card */}
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-[#dce4ed] bg-[#fbfcfd] px-4 py-7 shadow-xs">
+        {/* Vertical column of 3D Miniature Buses */}
+        <div className="flex flex-col items-center gap-3">
+          {slots.map((slot) => {
+            const isTarget = slot === position
+            const otherBusInSlot = buses.find(
+              (b) => b.zone === zoneName && b.position === slot && b.number !== bus.number
+            )
 
-      <p className="mt-3 text-[11px] leading-5 text-[#6f7e91]">
-        Bus <span className="font-bold text-[#0758a6]">{pad2(bus.number)}</span> is in position{' '}
-        <span className="font-bold text-[#0758a6]">{pad2(position)}</span> of zone {zone.name}.{' '}
-        {occupiedCount > 0 ? `${occupiedCount} other bus${occupiedCount === 1 ? '' : 'es'} parked in this zone. ` : ''}
-        Grey slots are taken, pale slots are empty.
-      </p>
+            return (
+              <div
+                key={slot}
+                className="group relative flex items-center justify-center"
+              >
+                {/* 3D Miniature Bus SVG Image */}
+                <div
+                  className={`relative flex items-center justify-center transition-transform duration-200 ${
+                    isTarget ? 'z-10 scale-105' : 'opacity-90 hover:scale-102 hover:opacity-100'
+                  }`}
+                >
+                  <img
+                    src={isTarget ? '/mini-bus-blue.svg' : '/mini-bus-grey.svg'}
+                    alt={
+                      isTarget
+                        ? `Selected Bus ${pad2(bus.number)} at position ${pad2(slot)}`
+                        : otherBusInSlot
+                        ? `Bus ${pad2(otherBusInSlot.number)} at position ${pad2(slot)}`
+                        : `Slot ${pad2(slot)}`
+                    }
+                    className={`h-20 w-14 object-contain transition-all ${
+                      isTarget
+                        ? 'drop-shadow-[0_8px_16px_rgba(37,99,235,0.4)]'
+                        : 'drop-shadow-sm'
+                    }`}
+                  />
+
+                  {/* Slot Number Label on the Roof */}
+                  <span
+                    className={`pointer-events-none absolute text-[10px] font-extrabold tracking-wider ${
+                      isTarget ? 'text-white' : 'text-[#475569]'
+                    }`}
+                  >
+                    {pad2(slot)}
+                  </span>
+                </div>
+
+                {/* Subtle Position / Bus indicator on the right */}
+                <div className="absolute left-[calc(100%+12px)] flex items-center whitespace-nowrap">
+                  <span
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-bold tabular-nums transition ${
+                      isTarget
+                        ? 'bg-[#0758a6] text-white shadow-xs'
+                        : 'bg-[#eef2f6] text-[#64748b] opacity-80 group-hover:opacity-100'
+                    }`}
+                  >
+                    {isTarget
+                      ? `Bus #${pad2(bus.number)}`
+                      : otherBusInSlot
+                      ? `Bus #${pad2(otherBusInSlot.number)}`
+                      : `Slot ${pad2(slot)}`}
+                  </span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Zone Name Label */}
+        <div className="mt-7 text-center">
+          <p className="text-lg font-bold tracking-tight text-[#17263d]">
+            Zone {zone.name}
+          </p>
+        </div>
+
+        {/* Entrance Label */}
+        <div className="mt-3.5 flex flex-col items-center">
+          <span className="text-2xl font-bold tracking-tight text-[#17263d]">
+            Entrance
+          </span>
+          <p className="mt-1 text-[11px] font-medium text-[#7c8b9d]">
+            Enter from main gate and follow pedestrian lane
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
+
 
 function Select({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) { return <label className="text-sm font-bold">{label}<span className="relative mt-2 block"><select value={value} onChange={(e) => onChange(e.target.value)} className="w-full appearance-none rounded-xl border border-[#d6e0ea] bg-white px-3 py-3">{options.map((option) => <option key={option}>{option}</option>)}</select><ChevronDown size={16} className="pointer-events-none absolute right-3 top-3.5 text-[#8190a1]" /></span></label> }
 
