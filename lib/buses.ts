@@ -175,5 +175,30 @@ export const validateLocation = (location: LocationDraft, layout: Layout): strin
 export const nextBusNumber = (buses: Bus[]): number =>
   buses.reduce((highest, bus) => Math.max(highest, bus.number), 0) + 1
 
+/**
+ * A position holds at most one bus, but a zone holds as many as it has positions.
+ * `ignoreNumber` is the bus being edited, so it does not conflict with itself.
+ */
+export const busAtPosition = (
+  buses: Bus[],
+  zone: string,
+  position: number,
+  ignoreNumber?: number,
+): Bus | undefined =>
+  buses.find(
+    (bus) =>
+      bus.zone === zone && bus.position === position && bus.number !== ignoreNumber,
+  )
+
+/** Positions already occupied in a zone, as a lookup of position -> bus number. */
+export const takenPositions = (buses: Bus[], zone: string, ignoreNumber?: number): Map<number, number> => {
+  const taken = new Map<number, number>()
+  for (const bus of buses) {
+    if (bus.zone !== zone || bus.position === null || bus.number === ignoreNumber) continue
+    taken.set(bus.position, bus.number)
+  }
+  return taken
+}
+
 /** Placeholder so components have a valid Bus before any real bus exists. */
 export const EMPTY_BUS: Bus = { number: 0, route: '', zone: null, position: null }

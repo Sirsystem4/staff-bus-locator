@@ -6,7 +6,16 @@ import { verifyAdminAccessCode } from '@/app/actions/auth'
 import { getBuses, moveBus } from '@/app/actions/buses'
 import { supabase } from '@/lib/supabase/client'
 import type { Bus } from '@/lib/buses'
-import { escapeRegExp, EMPTY_BUS, formatLocation, isParked, pad2, searchBuses, tokenize } from '@/lib/buses'
+import {
+  escapeRegExp,
+  EMPTY_BUS,
+  formatLocation,
+  isParked,
+  pad2,
+  searchBuses,
+  takenPositions,
+  tokenize,
+} from '@/lib/buses'
 import { findZone, positionOptions, type Layout, type Zone } from '@/lib/layout'
 
 
@@ -547,13 +556,8 @@ function AdminPanel({
   const activeZoneName = draft.zone ?? layout.zones[0]?.name ?? ''
   const activeZone = findZone(layout, activeZoneName)
 
-  // Track positions in this zone occupied by other buses
-  const occupiedInZone = new Map<number, number>()
-  for (const b of buses) {
-    if (b.zone === activeZoneName && b.position !== null && b.number !== draft.number) {
-      occupiedInZone.set(b.position, b.number)
-    }
-  }
+  // Positions in this zone held by *other* buses, so this bus never sees them as free.
+  const occupiedInZone = takenPositions(buses, activeZoneName, draft.number)
 
   // All positions in the zone (1 .. activeZone.positions)
   const allPositions = Array.from({ length: activeZone?.positions ?? 0 }, (_, i) => i + 1)
@@ -620,11 +624,7 @@ function AdminPanel({
             value={activeZoneName}
             onChange={(newZone) => {
               const zoneObj = findZone(layout, newZone)
-              const occupiedInNewZone = new Set(
-                buses
-                  .filter((b) => b.zone === newZone && b.position !== null && b.number !== draft.number)
-                  .map((b) => b.position!),
-              )
+              const occupiedInNewZone = takenPositions(buses, newZone, draft.number)
               const firstFree =
                 Array.from({ length: zoneObj?.positions ?? 0 }, (_, i) => i + 1).find(
                   (p) => !occupiedInNewZone.has(p),
