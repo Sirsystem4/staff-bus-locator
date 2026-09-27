@@ -102,6 +102,16 @@ export async function moveBus(number: number, location: LocationDraft | null): P
   if (location) {
     const error = validateLocation(location, await readLayout())
     if (error) return fail(error)
+
+    // A position can only be occupied by a single bus in the same zone
+    const conflict = buses.find(
+      (b) => b.number !== number && b.zone === location.zone && b.position === location.position,
+    )
+    if (conflict) {
+      return fail(
+        `Position ${pad2(location.position)} in Zone ${location.zone} is already taken by Bus ${pad2(conflict.number)}.`,
+      )
+    }
   }
 
   const supabase = getSupabaseServerClient()

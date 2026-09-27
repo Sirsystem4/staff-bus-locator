@@ -546,12 +546,31 @@ function AdminPanel({
 }) {
   const activeZoneName = draft.zone ?? layout.zones[0]?.name ?? ''
   const activeZone = findZone(layout, activeZoneName)
-  const availablePositions = positionOptions(layout, activeZoneName)
-  // A draft position can outlive its zone if the layout shrank, so keep the select on a real option.
+
+  // Track positions in this zone occupied by other buses
+  const occupiedInZone = new Map<number, number>()
+  for (const b of buses) {
+    if (b.zone === activeZoneName && b.position !== null && b.number !== draft.number) {
+      occupiedInZone.set(b.position, b.number)
+    }
+  }
+
+  // All positions in the zone (1 .. activeZone.positions)
+  const allPositions = Array.from({ length: activeZone?.positions ?? 0 }, (_, i) => i + 1)
+
+  // Positions that can be picked by this bus (either unpicked, or currently assigned to this bus)
+  const availablePositions = allPositions.filter(
+    (pos) => !occupiedInZone.has(pos) || pos === draft.position,
+  )
+
+  // Ensure safePosition is valid and not taken by another bus
   const safePosition =
-    draft.position !== null && draft.position >= 1 && draft.position <= (activeZone?.positions ?? 0)
+    draft.position !== null &&
+    draft.position >= 1 &&
+    draft.position <= (activeZone?.positions ?? 0) &&
+    !occupiedInZone.has(draft.position)
       ? draft.position
-      : 1
+      : availablePositions[0] ?? null
   const isCurrentlyParked = buses.find((b) => b.number === draft.number)?.zone !== null
 
   if (!loggedIn) {
@@ -599,16 +618,48 @@ function AdminPanel({
           <Select
             label="Zone"
             value={activeZoneName}
-            onChange={(value) => setDraft({ ...draft, zone: value, position: 1 })}
+            onChange={(newZone) => {
+              const zoneObj = findZone(layout, newZone)
+              const occupiedInNewZone = new Set(
+                buses
+                  .filter((b) => b.zone === newZone && b.position !== null && b.number !== draft.number)
+                  .map((b) => b.position!),
+              )
+              const firstFree =
+                Array.from({ length: zoneObj?.positions ?? 0 }, (_, i) => i + 1).find(
+                  (p) => !occupiedInNewZone.has(p),
+                ) ?? null
+              setDraft({ ...draft, zone: newZone, position: firstFree })
+            }}
             options={layout.zones.map((zone) => zone.name)}
           />
 
-          <Select
-            label={`Position${activeZone ? ` (${activeZone.positions} available)` : ''}`}
-            value={pad2(safePosition)}
-            onChange={(value) => setDraft({ ...draft, position: Number(value) })}
-            options={availablePositions}
-          />
+          <label className="text-sm font-bold">
+            Position{activeZone ? ` (${availablePositions.length} of ${activeZone.positions} available)` : ''}
+            <span className="relative mt-2 block">
+              <select
+                value={safePosition !== null ? String(safePosition) : ''}
+                onChange={(e) => setDraft({ ...draft, position: Number(e.target.value) })}
+                disabled={availablePositions.length === 0}
+                className="w-full appearance-none rounded-xl border border-[#d6e0ea] bg-white px-3 py-3 font-medium text-[#17263d] focus:border-[#0758a6] focus:outline-none focus:ring-2 focus:ring-[#dcecff] disabled:bg-[#f4f6f9] disabled:text-[#8290a1]"
+              >
+                {availablePositions.length === 0 ? (
+                  <option value="">All positions in this zone are occupied</option>
+                ) : (
+                  allPositions.map((pos) => {
+                    const takenByBus = occupiedInZone.get(pos)
+                    const isTaken = takenByBus !== undefined && pos !== draft.position
+                    return (
+                      <option key={pos} value={String(pos)} disabled={isTaken}>
+                        Position {pad2(pos)} {isTaken ? `(Occupied by Bus #${pad2(takenByBus)})` : '— Available'}
+                      </option>
+                    )
+                  })
+                )}
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute right-3 top-3.5 text-[#8190a1]" />
+            </span>
+          </label>
 
           <div className="text-sm font-bold sm:col-span-2">
             Route
@@ -624,10 +675,16 @@ function AdminPanel({
           </div>
         </div>
 
+        {availablePositions.length === 0 && (
+          <p className="mt-3 text-xs font-semibold text-[#c0392b]">
+            All {activeZone?.positions} positions in Zone {activeZoneName} are already occupied by other buses. Please choose another zone or unpark a bus.
+          </p>
+        )}
+
         <button
           onClick={saveLocation}
-          disabled={saving || !draft.number}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0758a6] py-3.5 text-sm font-bold text-white hover:bg-[#064984] disabled:opacity-50"
+          disabled={saving || !draft.number || safePosition === null}
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0758a6] py-3.5 text-sm font-bold text-white transition hover:bg-[#064984] disabled:opacity-50"
         >
           {saved && !saveError ? (
             <>
