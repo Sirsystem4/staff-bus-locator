@@ -41,28 +41,34 @@ export default function SuperAdminPanel({
 
   // Real-time synchronization via Supabase Postgres changes
   useEffect(() => {
-    const channel = supabase
-      .channel('super-admin-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'buses' }, async () => {
-        try {
-          const fresh = await getBuses()
-          if (Array.isArray(fresh)) setBuses(fresh)
-        } catch (e) {
-          console.error('Realtime bus fetch error:', e)
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'zones' }, async () => {
-        try {
-          const fresh = await getLayout()
-          if (fresh && Array.isArray(fresh.zones)) setLayout(fresh)
-        } catch (e) {
-          console.error('Realtime layout fetch error:', e)
-        }
-      })
-      .subscribe()
+    try {
+      const channel = supabase
+        .channel('super-admin-realtime')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'buses' }, async () => {
+          try {
+            const fresh = await getBuses()
+            if (Array.isArray(fresh)) setBuses(fresh)
+          } catch (e) {
+            console.error('Realtime bus fetch error:', e)
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'zones' }, async () => {
+          try {
+            const fresh = await getLayout()
+            if (fresh && Array.isArray(fresh.zones)) setLayout(fresh)
+          } catch (e) {
+            console.error('Realtime layout fetch error:', e)
+          }
+        })
+        .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
+      return () => {
+        try {
+          supabase.removeChannel(channel)
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('Realtime super-admin init error:', e)
     }
   }, [])
 

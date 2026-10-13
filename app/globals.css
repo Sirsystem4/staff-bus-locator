@@ -157,12 +157,52 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+   * iOS Safari WebKit Fix:
+   * 1. iOS Safari requires cursor: pointer on buttons and interactive elements
+   *    to properly bubble click events up to React's root listener.
+   * 2. touch-action: manipulation removes the 300ms double-tap delay without breaking scroll.
+   * 3. -webkit-tap-highlight-color ensures clean mobile visual feedback.
+   */
+  button,
+  [role='button'],
+  a,
+  input[type='button'],
+  input[type='submit'],
+  input[type='reset'] {
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /*
+   * Ensure inputs and select boxes have native touch-action (auto) so the
+   * virtual keyboard opens reliably on iPhone without dropped or delayed taps.
+   * font-size >= 16px prevents iOS Safari from automatically zooming into the page.
+   */
+  input,
+  textarea,
+  select {
+    touch-action: auto;
+    font-size: 16px;
+  }
+
+  input[type='search'],
+  input[type='text'] {
+    -webkit-appearance: none;
+  }
+
+  input[type='search']::-webkit-search-decoration,
+  input[type='search']::-webkit-search-cancel-button {
+    -webkit-appearance: none;
   }
 }
-
-/* iOS Safari touch fix */
-html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
-button, [role='button'], input, select, textarea { touch-action: manipulation; }
 

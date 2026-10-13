@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, BusFront, Check, ChevronDown, CircleHelp, Database, KeyRound, MapPin, Navigation, Search, ShieldCheck, X } from 'lucide-react'
 import { verifyAdminAccessCode } from '@/app/actions/auth'
 import { getBuses, moveBus } from '@/app/actions/buses'
@@ -37,34 +37,47 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // Real-time synchronization via Supabase Postgres changes
+  // Real-time synchronization via Supabase Postgres changes (safely wrapped for mobile Safari)
   useEffect(() => {
-    const channel = supabase
-      .channel('bus-finder-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'buses' },
-        async () => {
-          const fresh = await getBuses()
-          setBuses(fresh)
-          setSelected((curr) => {
-            const updated = fresh.find((b) => b.number === curr.number)
-            return updated ?? curr
-          })
-          setViewingBus((curr) => {
-            if (!curr) return null
-            const updated = fresh.find((b) => b.number === curr.number)
-            return updated ?? curr
-          })
-        },
-      )
-      .subscribe((status) => {
-        setIsLiveConnected(status === 'SUBSCRIBED')
-      })
+    try {
+      const channel = supabase
+        .channel('bus-finder-realtime')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'buses' },
+          async () => {
+            try {
+              const fresh = await getBuses()
+              if (Array.isArray(fresh)) {
+                setBuses(fresh)
+                setSelected((curr) => {
+                  const updated = fresh.find((b) => b.number === curr.number)
+                  return updated ?? curr
+                })
+                setViewingBus((curr) => {
+                  if (!curr) return null
+                  const updated = fresh.find((b) => b.number === curr.number)
+                  return updated ?? curr
+                })
+              }
+            } catch (fetchErr) {
+              console.warn('Realtime sync fetch error:', fetchErr)
+            }
+          },
+        )
+        .subscribe((status) => {
+          setIsLiveConnected(status === 'SUBSCRIBED')
+        })
 
-    return () => {
-      supabase.removeChannel(channel)
+      return () => {
+        try {
+          supabase.removeChannel(channel)
+        } catch {}
+      }
+    } catch (subErr) {
+      console.warn('Realtime subscription error:', subErr)
     }
   }, [])
 
@@ -220,6 +233,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
               {isLiveConnected ? 'Supabase live Now' : 'Reconnecting...'}
             </span> */}
             <button
+              type="button"
               onClick={() => {
                 if (!loggedIn) {
                   setShowLogin(true)
@@ -234,7 +248,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                   if (currentBus) selectBus(currentBus)
                 }
               }}
-              className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:px-3 sm:py-2 sm:text-sm ${loggedIn && mode === 'admin'
+              className={`cursor-pointer flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:px-3 sm:py-2 sm:text-sm active:scale-95 ${loggedIn && mode === 'admin'
                   ? 'border-[#0758a6] bg-[#edf4fb] text-[#0758a6]'
                   : 'border-[#dce4ed] bg-white text-[#516176] hover:bg-[#f5f7fa] hover:text-[#0758a6]'
                 }`}
@@ -246,16 +260,16 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                 </>
               ) : (
                 <>
-                  {/* <ShieldCheck size={16} /> */}
                   <span>{loggedIn ? 'Admin panel' : 'Transport admin'}</span>
                 </>
               )}
             </button>
             <button
+              type="button"
               onClick={() => setShowHelp(true)}
               aria-label="Help"
               title="Help and usage guide"
-              className="hidden rounded-lg p-2 text-[#718096] hover:bg-[#f1f5f9] md:flex"
+              className="cursor-pointer hidden rounded-lg p-2 text-[#718096] hover:bg-[#f1f5f9] md:flex"
             >
               <CircleHelp size={19} />
             </button>
@@ -279,20 +293,42 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
         </div>
 
         {mode === 'staff' ? <>
-          <div className="mb-4 flex max-w-2xl items-center gap-3 rounded-2xl border border-[#dce4ed] bg-white p-2 shadow-[0_8px_30px_rgba(21,34,56,0.05)] focus-within:border-[#62a5e8] focus-within:ring-4 focus-within:ring-[#dcecff]">
-            <Search className="ml-3 shrink-0 text-[#7c8a9c]" size={21} />
+          <div
+            onClick={() => searchInputRef.current?.focus()}
+            className="mb-4 flex max-w-2xl cursor-text items-center gap-3 rounded-2xl border border-[#dce4ed] bg-white p-2 shadow-[0_8px_30px_rgba(21,34,56,0.05)] focus-within:border-[#62a5e8] focus-within:ring-4 focus-within:ring-[#dcecff]"
+          >
+            <Search className="ml-3 shrink-0 pointer-events-none text-[#7c8a9c]" size={21} />
             <input
+              ref={searchInputRef}
               aria-label="Search buses"
               aria-describedby="search-count"
-              type="search"
+              type="text"
+              inputMode="search"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="none"
+              spellCheck={false}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={runSearch}
               placeholder="Search bus number, route, zone or position..."
               className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-[#9aa7b7]"
             />
-            {query && <button aria-label="Clear search" onClick={() => setQuery('')} className="shrink-0 rounded p-1 hover:bg-[#eef3f8]"><X size={17} className="text-[#8190a1]" /></button>}
-            <span id="search-count" aria-live="polite" className="hidden shrink-0 rounded-lg bg-[#edf4fb] px-3 py-2 text-xs font-bold text-[#0758a6] sm:block">
+            {query && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setQuery('')
+                  searchInputRef.current?.focus()
+                }}
+                className="cursor-pointer shrink-0 rounded p-1 hover:bg-[#eef3f8] active:scale-95"
+              >
+                <X size={17} className="text-[#8190a1]" />
+              </button>
+            )}
+            <span id="search-count" aria-live="polite" className="pointer-events-none hidden shrink-0 rounded-lg bg-[#edf4fb] px-3 py-2 text-xs font-bold text-[#0758a6] sm:block">
               {isSearching ? `${visible.length} of ${buses.length}` : `${buses.length} buses`}
             </span>
           </div>
@@ -301,9 +337,10 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
             {zoneList.map((zone) => (
               <button
                 key={zone.name}
+                type="button"
                 onClick={() => setQuery(isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}` ? '' : `zone ${zone.name}`)}
                 aria-pressed={isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`}
-                className={`rounded-lg border px-2.5 py-1 text-xs font-bold transition ${isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`
+                className={`cursor-pointer rounded-lg border px-2.5 py-1 text-xs font-bold transition active:scale-95 ${isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`
                   ? 'border-[#0758a6] bg-[#0758a6] text-white'
                   : 'border-[#dce4ed] bg-white text-[#5b6b80] hover:border-[#9fc6ec] hover:text-[#0758a6]'
                   }`}
@@ -321,18 +358,19 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                       <Search className="mx-auto text-[#9aa7b7]" size={28} />
                       <p className="mt-3 text-base font-bold">No buses match &quot;{query.trim()}&quot;</p>
                       <p className="mt-1 text-sm text-[#6f7e91]">Try a bus number like <span className="font-bold text-[#0758a6]">07</span>, a route like <span className="font-bold text-[#0758a6]">igando</span>, or a spot like <span className="font-bold text-[#0758a6]">zone d</span>.</p>
-                      <button onClick={() => setQuery('')} className="mt-4 rounded-lg border border-[#dce4ed] bg-white px-3 py-2 text-sm font-bold text-[#0758a6] hover:bg-[#edf4fb]">Clear search</button>
+                      <button type="button" onClick={() => setQuery('')} className="cursor-pointer mt-4 rounded-lg border border-[#dce4ed] bg-white px-3 py-2 text-sm font-bold text-[#0758a6] hover:bg-[#edf4fb]">Clear search</button>
                     </div>
                   ) : (
                     <ul className="space-y-2">
                       {visible.map((bus, index) => (
                         <li key={bus.number}>
                           <button
+                            type="button"
                             onClick={() => {
                               selectBus(bus)
                               setViewingBus(bus)
                             }}
-                            className={`flex w-full items-center justify-between rounded-xl border-2 p-3 text-left transition hover:border-[#4e9de3] hover:bg-[#eef7ff] ${selected.number === bus.number ? 'border-[#4e9de3] bg-[#eef7ff]' : 'border-[#dce4ed] bg-white'
+                            className={`cursor-pointer flex w-full items-center justify-between rounded-xl border-2 p-3 text-left transition active:scale-[0.99] hover:border-[#4e9de3] hover:bg-[#eef7ff] ${selected.number === bus.number ? 'border-[#4e9de3] bg-[#eef7ff]' : 'border-[#dce4ed] bg-white'
                               }`}
                           >
                             <div className="flex items-center gap-3">
@@ -363,10 +401,11 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                 return (
                   <button
                     key={name}
+                    type="button"
                     disabled={dimmed}
                     onClick={() => setViewingZone(zone)}
                     aria-label={`Zone ${name}, ${isSearching ? `${matches} matching of ${total}` : `${total} buses`} parked, ${zone.positions} positions. Click to view all buses in this zone.`}
-                    className={`min-h-32 rounded-xl border-2 p-4 text-left transition ${dimmed
+                    className={`cursor-pointer min-h-32 rounded-xl border-2 p-4 text-left transition active:scale-95 ${dimmed
                       ? 'cursor-not-allowed border-[#e8edf2] bg-[#f7f9fb] opacity-45'
                       : 'hover:-translate-y-0.5 hover:shadow-md'
                       } ${selected.zone === name ? 'border-[#4e9de3] bg-[#eef7ff]' : 'border-[#dce4ed] bg-[#f9fbfc]'}`}
@@ -387,7 +426,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                   </button>
                 )
               })}</div><div className="mt-5 rounded-xl bg-[#f1f5f8] p-4"><div className="flex items-center gap-3"><Navigation size={18} className="text-[#0758a6]" /><div><p className="text-sm font-bold">How to use the layout</p><p className="mt-1 text-xs leading-5 text-[#6f7e91]">Enter through the main gate, then follow the zone signs. Every zone has its own numbered positions.</p></div></div></div></section>
-            <aside className="space-y-4"><div className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><p className="text-xs font-bold uppercase tracking-[0.15em] text-[#8290a1]">Selected bus</p><div className="mt-1 flex items-center justify-between"><h2 className="text-2xl font-bold">Bus {busLabel(selected)}</h2><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${isParked(selected) ? 'bg-[#e9f7f0] text-[#218d5e]' : 'bg-[#fdf3d8] text-[#b8860b]'}`}>{isParked(selected) ? 'Parked' : 'Not parked yet'}</span></div><div className={`mt-5 rounded-xl p-4 ${isParked(selected) ? 'bg-[#edf4fb]' : 'bg-[#fdf3d8]'}`}><p className="text-xs font-bold uppercase tracking-wider text-[#6c7d91]">Parked at</p><p className={`mt-1 text-lg font-extrabold ${isParked(selected) ? 'text-[#0758a6]' : 'text-[#b8860b]'}`}>{formatLocation(selected)}</p>{!isParked(selected) && <p className="mt-1 text-xs leading-5 text-[#7a6a3a]">A transport admin has not recorded where this bus is parked yet.</p>}</div><PositionMap bus={selected} buses={buses} layout={layout} /><div className="mt-4 flex items-center gap-3"><div className="flex size-9 items-center justify-center rounded-lg bg-[#e9f7f0] text-[#218d5e]"><Navigation size={18} /></div><div><p className="text-xs text-[#8290a1]">Route</p><p className="font-bold">{selected.route}</p></div></div><button onClick={() => setViewingBus(selected)} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white hover:bg-[#064984] transition">View full bus details <ArrowRight size={16} /></button></div><div id="bus-list" className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><div className="mb-3 flex items-center justify-between"><h2 className="font-bold">{isSearching ? 'Matches' : 'All buses'}</h2><span className="text-xs font-semibold text-[#8190a2]">{visible.length} shown</span></div><div className="max-h-64 space-y-1 overflow-auto">{visible.length === 0 ? <p className="rounded-xl bg-[#f7f9fb] p-4 text-center text-sm text-[#6f7e91]">No buses match your search.</p> : visible.map((bus) => <button key={bus.number} onClick={() => { selectBus(bus); setViewingBus(bus); }} className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-left transition ${selected.number === bus.number ? 'bg-[#edf4fb]' : 'hover:bg-[#f5f7fa]'}`}><div className="flex items-center gap-3"><span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#0758a6] text-xs font-extrabold text-white">{busLabel(bus)}</span><div className="min-w-0"><p className="truncate text-sm font-bold">{highlight(bus.route)}</p><p className={`text-xs ${isParked(bus) ? 'text-[#8592a1]' : 'font-semibold text-[#b8860b]'}`}>{isParked(bus) ? highlight(`Zone ${bus.zone} · Pos ${pad2(bus.position)}`) : 'Not parked yet'}</p></div></div><ArrowRight size={15} className="shrink-0 text-[#9aa7b7]" /></button>)}</div></div></aside>
+            <aside className="space-y-4"><div className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><p className="text-xs font-bold uppercase tracking-[0.15em] text-[#8290a1]">Selected bus</p><div className="mt-1 flex items-center justify-between"><h2 className="text-2xl font-bold">Bus {busLabel(selected)}</h2><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${isParked(selected) ? 'bg-[#e9f7f0] text-[#218d5e]' : 'bg-[#fdf3d8] text-[#b8860b]'}`}>{isParked(selected) ? 'Parked' : 'Not parked yet'}</span></div><div className={`mt-5 rounded-xl p-4 ${isParked(selected) ? 'bg-[#edf4fb]' : 'bg-[#fdf3d8]'}`}><p className="text-xs font-bold uppercase tracking-wider text-[#6c7d91]">Parked at</p><p className={`mt-1 text-lg font-extrabold ${isParked(selected) ? 'text-[#0758a6]' : 'text-[#b8860b]'}`}>{formatLocation(selected)}</p>{!isParked(selected) && <p className="mt-1 text-xs leading-5 text-[#7a6a3a]">A transport admin has not recorded where this bus is parked yet.</p>}</div><PositionMap bus={selected} buses={buses} layout={layout} /><div className="mt-4 flex items-center gap-3"><div className="flex size-9 items-center justify-center rounded-lg bg-[#e9f7f0] text-[#218d5e]"><Navigation size={18} /></div><div><p className="text-xs text-[#8290a1]">Route</p><p className="font-bold">{selected.route}</p></div></div><button type="button" onClick={() => setViewingBus(selected)} className="cursor-pointer mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984] active:scale-95">View full bus details <ArrowRight size={16} /></button></div><div id="bus-list" className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><div className="mb-3 flex items-center justify-between"><h2 className="font-bold">{isSearching ? 'Matches' : 'All buses'}</h2><span className="text-xs font-semibold text-[#8190a2]">{visible.length} shown</span></div><div className="max-h-64 space-y-1 overflow-auto">{visible.length === 0 ? <p className="rounded-xl bg-[#f7f9fb] p-4 text-center text-sm text-[#6f7e91]">No buses match your search.</p> : visible.map((bus) => <button key={bus.number} type="button" onClick={() => { selectBus(bus); setViewingBus(bus); }} className={`cursor-pointer flex w-full items-center justify-between rounded-xl px-3 py-3 text-left transition active:scale-[0.99] ${selected.number === bus.number ? 'bg-[#edf4fb]' : 'hover:bg-[#f5f7fa]'}`}><div className="flex items-center gap-3"><span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#0758a6] text-xs font-extrabold text-white">{busLabel(bus)}</span><div className="min-w-0"><p className="truncate text-sm font-bold">{highlight(bus.route)}</p><p className={`text-xs ${isParked(bus) ? 'text-[#8592a1]' : 'font-semibold text-[#b8860b]'}`}>{isParked(bus) ? highlight(`Zone ${bus.zone} · Pos ${pad2(bus.position)}`) : 'Not parked yet'}</p></div></div><ArrowRight size={15} className="shrink-0 text-[#9aa7b7]" /></button>)}</div></div></aside>
           </div>
         </> : <AdminPanel loggedIn={loggedIn} draft={draft} setDraft={setDraft} buses={buses} selectBus={selectBus} saveLocation={saveLocation} clearLocation={clearLocation} saved={saved} saving={saving} saveError={saveError} layout={layout} />}
         <footer className="mt-8 flex flex-col gap-2 text-xs text-[#8491a1] sm:flex-row sm:items-center sm:justify-between"><p>Locations are updated by authorized Transport/Admin staff.</p><div className="flex flex-wrap items-center gap-x-4 gap-y-1"><p>Car park layout · {zoneList.length} zone{zoneList.length === 1 ? '' : 's'} ({zoneList.map((zone) => zone.name).join(', ')}) · {zoneList.reduce((sum, zone) => sum + zone.positions, 0)} positions</p><a href="/super-admin" className="font-semibold text-[#6b7a8d] underline-offset-2 hover:text-[#0758a6] hover:underline">Super admin</a></div></footer>
@@ -404,7 +443,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                 <h2 className="text-xl font-bold">Admin sign in</h2>
                 <p className="mt-1 text-sm text-[#718095]">Enter the 4-digit transport admin code to update bus locations.</p>
               </div>
-              <button onClick={() => setShowLogin(false)} aria-label="Close login">
+              <button type="button" onClick={() => setShowLogin(false)} aria-label="Close login" className="cursor-pointer p-1 text-[#8190a1] hover:bg-[#f1f5f9] rounded-lg active:scale-95">
                 <X className="text-[#8190a1]" />
               </button>
             </div>
@@ -432,7 +471,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
               <button
                 type="submit"
                 disabled={adminCode.length !== 4 || verifying}
-                className="mt-5 w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984] disabled:cursor-not-allowed disabled:opacity-40"
+                className="cursor-pointer mt-5 w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {verifying ? 'Checking...' : 'Continue as admin'}
               </button>
@@ -462,7 +501,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                   <p className="text-xs text-[#718095]">Help and system information</p>
                 </div>
               </div>
-              <button onClick={() => setShowHelp(false)} aria-label="Close help" className="rounded-lg p-1 text-[#8190a1] hover:bg-[#f1f5f9]">
+              <button type="button" onClick={() => setShowHelp(false)} aria-label="Close help" className="cursor-pointer rounded-lg p-1 text-[#8190a1] hover:bg-[#f1f5f9] active:scale-95">
                 <X size={20} />
               </button>
             </div>
@@ -490,7 +529,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
               </div>
             </div>
 
-            <button onClick={() => setShowHelp(false)} className="mt-6 w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white hover:bg-[#064984]">
+            <button type="button" onClick={() => setShowHelp(false)} className="cursor-pointer mt-6 w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white hover:bg-[#064984] active:scale-95">
               Close guide
             </button>
           </div>
@@ -914,9 +953,10 @@ function BusDetailsDialog({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded-xl p-2.5 text-[#718096] transition hover:bg-[#f1f5f9]"
+            className="cursor-pointer rounded-xl p-2.5 text-[#718096] transition hover:bg-[#f1f5f9] active:scale-95"
           >
             <X size={20} />
           </button>
@@ -952,7 +992,7 @@ function BusDetailsDialog({
                 <button
                   type="button"
                   onClick={() => onViewZone(zone.name)}
-                  className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#0758a6] bg-[#f0f7fe] py-2.5 text-xs font-bold text-[#0758a6] transition hover:bg-[#e1f0fe]"
+                  className="cursor-pointer mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#0758a6] bg-[#f0f7fe] py-2.5 text-xs font-bold text-[#0758a6] transition hover:bg-[#e1f0fe] active:scale-95"
                 >
                   <MapPin size={15} /> View all buses in Zone {zone.name} →
                 </button>
@@ -988,8 +1028,9 @@ function BusDetailsDialog({
         {/* Dialog Footer */}
         <div className="border-t border-[#eef2f6] bg-[#fbfcfd] p-4">
           <button
+            type="button"
             onClick={onClose}
-            className="w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984]"
+            className="cursor-pointer w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984] active:scale-95"
           >
             Close
           </button>
@@ -1057,9 +1098,10 @@ function ZoneDetailsDialog({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             aria-label="Close dialog"
-            className="rounded-xl p-2.5 text-[#718096] transition hover:bg-[#f1f5f9]"
+            className="cursor-pointer rounded-xl p-2.5 text-[#718096] transition hover:bg-[#f1f5f9] active:scale-95"
           >
             <X size={20} />
           </button>
@@ -1096,7 +1138,7 @@ function ZoneDetailsDialog({
                       }}
                       title={busInSlot ? `Bus ${pad2(busInSlot.number)} (${busInSlot.route})` : `Slot ${pad2(slot)} empty`}
                       className={`flex aspect-square w-full flex-col items-center justify-center rounded-lg text-xs font-bold tabular-nums transition ${busInSlot
-                        ? 'cursor-pointer bg-[#0758a6] text-white shadow-sm ring-1 ring-[#0758a6] hover:bg-[#064984]'
+                        ? 'cursor-pointer bg-[#0758a6] text-white shadow-sm ring-1 ring-[#0758a6] hover:bg-[#064984] active:scale-95'
                         : 'cursor-default bg-[#eef2f6] text-[#9aa7b7]'
                         }`}
                     >
@@ -1138,7 +1180,7 @@ function ZoneDetailsDialog({
                     key={bus.number}
                     type="button"
                     onClick={() => onSelectBus(bus)}
-                    className="flex w-full items-center justify-between rounded-xl border border-[#dce4ed] bg-white p-3.5 text-left transition hover:border-[#4e9de3] hover:bg-[#eef7ff]"
+                    className="cursor-pointer flex w-full items-center justify-between rounded-xl border border-[#dce4ed] bg-white p-3.5 text-left transition hover:border-[#4e9de3] hover:bg-[#eef7ff] active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3">
                       <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[#0758a6] text-xs font-extrabold text-white">
@@ -1165,8 +1207,9 @@ function ZoneDetailsDialog({
         {/* Dialog Footer */}
         <div className="border-t border-[#eef2f6] bg-[#fbfcfd] p-4">
           <button
+            type="button"
             onClick={onClose}
-            className="w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984]"
+            className="cursor-pointer w-full rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984] active:scale-95"
           >
             Close
           </button>
