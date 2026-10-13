@@ -161,3 +161,8 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* iOS Safari touch fix */
+html { -webkit-text-size-adjust: 100%; touch-action: manipulation; }
+button, [role='button'], input, select, textarea { touch-action: manipulation; }
+
