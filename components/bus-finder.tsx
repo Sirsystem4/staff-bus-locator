@@ -185,7 +185,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
     })
     setSaved(false)
 
-    // Trigger pop up user notification & broadcast
+    // Trigger pop up user notification & broadcast pro
     const notif = createParkNotification(unparkedBus, oldBus)
     pushNotification(notif, true)
   }
@@ -261,8 +261,8 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                 }
               }}
               className={`cursor-pointer flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition sm:px-3 sm:py-2 sm:text-sm active:scale-95 ${loggedIn && mode === 'admin'
-                  ? 'border-[#0758a6] bg-[#edf4fb] text-[#0758a6]'
-                  : 'border-[#dce4ed] bg-white text-[#516176] hover:bg-[#f5f7fa] hover:text-[#0758a6]'
+                ? 'border-[#0758a6] bg-[#edf4fb] text-[#0758a6]'
+                : 'border-[#dce4ed] bg-white text-[#516176] hover:bg-[#f5f7fa] hover:text-[#0758a6]'
                 }`}
             >
               {loggedIn && mode === 'admin' ? (
@@ -475,9 +475,8 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                   maxLength={4}
                   placeholder="••••"
                   aria-invalid={authError ? true : undefined}
-                  className={`mt-2 w-full rounded-xl border bg-white px-3 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none ${
-                    authError ? 'border-[#d9534f]' : 'border-[#d6e0ea] focus:border-[#4e9de3]'
-                  }`}
+                  className={`mt-2 w-full rounded-xl border bg-white px-3 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none ${authError ? 'border-[#d9534f]' : 'border-[#d6e0ea] focus:border-[#4e9de3]'
+                    }`}
                 />
               </label>
               {authError && <p role="alert" className="mt-2 text-sm font-semibold text-[#c0392b]">{authError}</p>}
@@ -622,9 +621,9 @@ function AdminPanel({
   // Ensure safePosition is valid and not taken by another bus
   const safePosition =
     draft.position !== null &&
-    draft.position >= 1 &&
-    draft.position <= (activeZone?.positions ?? 0) &&
-    !occupiedInZone.has(draft.position)
+      draft.position >= 1 &&
+      draft.position <= (activeZone?.positions ?? 0) &&
+      !occupiedInZone.has(draft.position)
       ? draft.position
       : availablePositions[0] ?? null
   const isCurrentlyParked = buses.find((b) => b.number === draft.number)?.zone !== null
@@ -837,9 +836,8 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
               >
                 {/* 3D Miniature Bus SVG Image (Facing Entrance / Downward) */}
                 <div
-                  className={`relative flex items-center justify-center transition-transform duration-200 ${
-                    isTarget ? 'z-10 scale-105' : 'opacity-90 hover:scale-102 hover:opacity-100'
-                  }`}
+                  className={`relative flex items-center justify-center transition-transform duration-200 ${isTarget ? 'z-10 scale-105' : 'opacity-90 hover:scale-102 hover:opacity-100'
+                    }`}
                 >
                   <img
                     src={isTarget ? '/mini-bus-blue.svg' : '/mini-bus-grey.svg'}
@@ -848,18 +846,16 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
                         ? `Selected Bus ${pad2(parkedBus.number)} at Position ${pad2(parkedBus.position!)}`
                         : `Bus ${pad2(parkedBus.number)} at Position ${pad2(parkedBus.position!)}`
                     }
-                    className={`h-20 w-14 object-contain transition-all ${
-                      isTarget
+                    className={`h-20 w-14 object-contain transition-all ${isTarget
                         ? 'drop-shadow-[0_8px_16px_rgba(37,99,235,0.4)]'
                         : 'drop-shadow-sm'
-                    }`}
+                      }`}
                   />
 
                   {/* Bus Number Label on the Roof */}
                   <span
-                    className={`pointer-events-none absolute text-[10px] font-extrabold tracking-wider ${
-                      isTarget ? 'text-white' : 'text-[#334155]'
-                    }`}
+                    className={`pointer-events-none absolute text-[10px] font-extrabold tracking-wider ${isTarget ? 'text-white' : 'text-[#334155]'
+                      }`}
                   >
                     #{pad2(parkedBus.number)}
                   </span>
@@ -868,11 +864,10 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
                 {/* Position and Route indicator on the side */}
                 <div className="absolute left-[calc(100%+14px)] flex items-center whitespace-nowrap">
                   <div
-                    className={`flex flex-col rounded-md px-2 py-0.5 text-left text-xs transition ${
-                      isTarget
+                    className={`flex flex-col rounded-md px-2 py-0.5 text-left text-xs transition ${isTarget
                         ? 'bg-[#0758a6] text-white shadow-xs'
                         : 'bg-[#eef2f6] text-[#475569] opacity-85 group-hover:opacity-100'
-                    }`}
+                      }`}
                   >
                     <span className="font-extrabold tabular-nums">
                       Pos {pad2(parkedBus.position!)}
