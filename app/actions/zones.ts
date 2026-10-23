@@ -50,7 +50,7 @@ export async function addZone(draft: Zone): Promise<LayoutActionResult> {
 export async function updateZone(previousName: string, draft: Zone): Promise<LayoutActionResult> {
   const layout = await readLayout()
   if (!layout.zones.some((zone) => zone.name === previousName)) {
-    return fail(`Zone "${previousName}" no longer exists.`)
+    return fail(`Lane "${previousName}" no longer exists.`)
   }
   const error = check(draft, layout, previousName)
   if (error) return fail(error)
@@ -112,10 +112,10 @@ export async function updateZone(previousName: string, draft: Zone): Promise<Lay
 export async function deleteZone(name: string): Promise<LayoutActionResult> {
   const layout = await readLayout()
   if (layout.zones.length <= 1) {
-    return fail('A car park needs at least one zone, so the last zone cannot be removed.')
+    return fail('A car park needs at least one lane, so the last lane cannot be removed.')
   }
   if (!layout.zones.some((zone) => zone.name === name)) {
-    return fail(`Zone "${name}" no longer exists.`)
+    return fail(`Lane "${name}" no longer exists.`)
   }
 
   const supabase = getSupabaseServerClient()

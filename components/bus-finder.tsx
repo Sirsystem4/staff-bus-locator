@@ -300,8 +300,8 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
           </h1>
           <p className="mt-3 max-w-xl text-base leading-7 text-[#647286]">
             {mode === 'admin'
-              ? 'Select a shuttle and assign or clear its assigned parking zone and bay position.'
-              : "Search a bus number or route. We'll show its zone, row and position in the car park."}
+              ? 'Select a shuttle and assign or clear its assigned parking lane and bay position.'
+              : "Search a bus number or route. We'll show its lane, row and position in the car park."}
           </p>
         </div>
 
@@ -324,7 +324,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={runSearch}
-              placeholder="Search bus number, route, zone or position..."
+              placeholder="Search bus number, route, lane or position..."
               className="min-w-0 flex-1 bg-transparent py-2 text-base outline-none placeholder:text-[#9aa7b7]"
             />
             {query && (
@@ -347,30 +347,36 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
           </div>
           <div className="mb-7 flex max-w-2xl flex-wrap items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-wider text-[#8b98a8]">Quick filter</span>
-            {zoneList.map((zone) => (
-              <button
-                key={zone.name}
-                type="button"
-                onClick={() => setQuery(isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}` ? '' : `zone ${zone.name}`)}
-                aria-pressed={isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`}
-                className={`cursor-pointer rounded-lg border px-2.5 py-1 text-xs font-bold transition active:scale-95 ${isSearching && query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`
-                  ? 'border-[#0758a6] bg-[#0758a6] text-white'
-                  : 'border-[#dce4ed] bg-white text-[#5b6b80] hover:border-[#9fc6ec] hover:text-[#0758a6]'
-                  }`}
-              >
-                Zone {zone.name}
-              </button>
-            ))}
+            {zoneList.map((zone) => {
+              const isFilterActive =
+                isSearching &&
+                (query.trim().toLowerCase() === `lane ${zone.name.toLowerCase()}` ||
+                  query.trim().toLowerCase() === `zone ${zone.name.toLowerCase()}`)
+              return (
+                <button
+                  key={zone.name}
+                  type="button"
+                  onClick={() => setQuery(isFilterActive ? '' : `lane ${zone.name}`)}
+                  aria-pressed={isFilterActive}
+                  className={`cursor-pointer rounded-lg border px-2.5 py-1 text-xs font-bold transition active:scale-95 ${isFilterActive
+                    ? 'border-[#0758a6] bg-[#0758a6] text-white'
+                    : 'border-[#dce4ed] bg-white text-[#5b6b80] hover:border-[#9fc6ec] hover:text-[#0758a6]'
+                    }`}
+                >
+                  Lane {zone.name}
+                </button>
+              )
+            })}
           </div>
           <div className="grid gap-6 lg:grid-cols-[1fr_390px]">
-            <section className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><div className="mb-5 flex items-center justify-between"><div><h2 className="font-bold">{isSearching ? `Search results for "${query.trim()}"` : 'Car park zones'}</h2><p className="mt-1 text-xs text-[#7a899b]">{isSearching ? `${visible.length} of ${buses.length} buses match, best match first` : 'Select a bus to see walking directions'}</p></div><span className="flex items-center gap-1.5 text-xs font-semibold text-[#219363]"><span className="size-2.5 rounded-full bg-[#28aa70]" /> Updated now</span></div>
+            <section className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><div className="mb-5 flex items-center justify-between"><div><h2 className="font-bold">{isSearching ? `Search results for "${query.trim()}"` : 'Car park lanes'}</h2><p className="mt-1 text-xs text-[#7a899b]">{isSearching ? `${visible.length} of ${buses.length} buses match, best match first` : 'Select a bus to see walking directions'}</p></div><span className="flex items-center gap-1.5 text-xs font-semibold text-[#219363]"><span className="size-2.5 rounded-full bg-[#28aa70]" /> Updated now</span></div>
               {isSearching && (
                 <div className="mb-5">
                   {visible.length === 0 ? (
                     <div className="rounded-xl border-2 border-dashed border-[#dce4ed] bg-[#f9fbfc] p-8 text-center">
                       <Search className="mx-auto text-[#9aa7b7]" size={28} />
                       <p className="mt-3 text-base font-bold">No buses match &quot;{query.trim()}&quot;</p>
-                      <p className="mt-1 text-sm text-[#6f7e91]">Try a bus number like <span className="font-bold text-[#0758a6]">07</span>, a route like <span className="font-bold text-[#0758a6]">igando</span>, or a spot like <span className="font-bold text-[#0758a6]">zone d</span>.</p>
+                      <p className="mt-1 text-sm text-[#6f7e91]">Try a bus number like <span className="font-bold text-[#0758a6]">07</span>, a route like <span className="font-bold text-[#0758a6]">igando</span>, or a spot like <span className="font-bold text-[#0758a6]">lane d</span>.</p>
                       <button type="button" onClick={() => setQuery('')} className="cursor-pointer mt-4 rounded-lg border border-[#dce4ed] bg-white px-3 py-2 text-sm font-bold text-[#0758a6] hover:bg-[#edf4fb]">Clear search</button>
                     </div>
                   ) : (
@@ -390,7 +396,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                               <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[#0758a6] text-sm font-extrabold text-white">{highlight(busLabel(bus))}</span>
                               <div className="min-w-0">
                                 <p className="truncate text-sm font-bold">{highlight(bus.route)}</p>
-                                <p className={`text-xs ${isParked(bus) ? 'text-[#7a899b]' : 'font-semibold text-[#b8860b]'}`}>{isParked(bus) ? highlight(`Zone ${bus.zone} · Position ${pad2(bus.position)}`) : 'Not parked yet'}</p>
+                                <p className={`text-xs ${isParked(bus) ? 'text-[#7a899b]' : 'font-semibold text-[#b8860b]'}`}>{isParked(bus) ? highlight(`Lane ${bus.zone} · Position ${pad2(bus.position)}`) : 'Not parked yet'}</p>
                               </div>
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
@@ -417,7 +423,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                     type="button"
                     disabled={dimmed}
                     onClick={() => setViewingZone(zone)}
-                    aria-label={`Zone ${name}, ${isSearching ? `${matches} matching of ${total}` : `${total} buses`} parked, ${zone.positions} positions. Click to view all buses in this zone.`}
+                    aria-label={`Lane ${name}, ${isSearching ? `${matches} matching of ${total}` : `${total} buses`} parked, ${zone.positions} positions. Click to view all buses in this lane.`}
                     className={`cursor-pointer min-h-32 rounded-xl border-2 p-4 text-left transition active:scale-95 ${dimmed
                       ? 'cursor-not-allowed border-[#e8edf2] bg-[#f7f9fb] opacity-45'
                       : 'hover:-translate-y-0.5 hover:shadow-md'
@@ -427,7 +433,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                       <span className="flex size-9 items-center justify-center rounded-lg bg-[#0758a6] text-lg font-extrabold text-white">{name}</span>
                       <MapPin size={17} className="text-[#7e8da0]" />
                     </div>
-                    <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#7c8b9c]">Zone {name}</p>
+                    <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[#7c8b9c]">Lane {name}</p>
                     <p className="mt-1 text-sm font-bold">
                       {isSearching ? (
                         <>{matches} of {total} match{matches === 1 ? 'es' : ''}</>
@@ -438,11 +444,11 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
                     <p className="mt-0.5 text-[11px] text-[#8b98a8]">{zone.positions} positions</p>
                   </button>
                 )
-              })}</div><div className="mt-5 rounded-xl bg-[#f1f5f8] p-4"><div className="flex items-center gap-3"><Navigation size={18} className="text-[#0758a6]" /><div><p className="text-sm font-bold">How to use the layout</p><p className="mt-1 text-xs leading-5 text-[#6f7e91]">Enter through the main gate, then follow the zone signs. Every zone has its own numbered positions.</p></div></div></div></section>
-            <aside className="space-y-4"><div className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><p className="text-xs font-bold uppercase tracking-[0.15em] text-[#8290a1]">Selected bus</p><div className="mt-1 flex items-center justify-between"><h2 className="text-2xl font-bold">Bus {busLabel(selected)}</h2><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${isParked(selected) ? 'bg-[#e9f7f0] text-[#218d5e]' : 'bg-[#fdf3d8] text-[#b8860b]'}`}>{isParked(selected) ? 'Parked' : 'Not parked yet'}</span></div><div className={`mt-5 rounded-xl p-4 ${isParked(selected) ? 'bg-[#edf4fb]' : 'bg-[#fdf3d8]'}`}><p className="text-xs font-bold uppercase tracking-wider text-[#6c7d91]">Parked at</p><p className={`mt-1 text-lg font-extrabold ${isParked(selected) ? 'text-[#0758a6]' : 'text-[#b8860b]'}`}>{formatLocation(selected)}</p>{!isParked(selected) && <p className="mt-1 text-xs leading-5 text-[#7a6a3a]">A transport admin has not recorded where this bus is parked yet.</p>}</div><PositionMap bus={selected} buses={buses} layout={layout} /><div className="mt-4 flex items-center gap-3"><div className="flex size-9 items-center justify-center rounded-lg bg-[#e9f7f0] text-[#218d5e]"><Navigation size={18} /></div><div><p className="text-xs text-[#8290a1]">Route</p><p className="font-bold">{selected.route}</p></div></div><button type="button" onClick={() => setViewingBus(selected)} className="cursor-pointer mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984] active:scale-95">View full bus details <ArrowRight size={16} /></button></div><div id="bus-list" className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><div className="mb-3 flex items-center justify-between"><h2 className="font-bold">{isSearching ? 'Matches' : 'All buses'}</h2><span className="text-xs font-semibold text-[#8190a2]">{visible.length} shown</span></div><div className="max-h-64 space-y-1 overflow-auto">{visible.length === 0 ? <p className="rounded-xl bg-[#f7f9fb] p-4 text-center text-sm text-[#6f7e91]">No buses match your search.</p> : visible.map((bus) => <button key={bus.number} type="button" onClick={() => { selectBus(bus); setViewingBus(bus); }} className={`cursor-pointer flex w-full items-center justify-between rounded-xl px-3 py-3 text-left transition active:scale-[0.99] ${selected.number === bus.number ? 'bg-[#edf4fb]' : 'hover:bg-[#f5f7fa]'}`}><div className="flex items-center gap-3"><span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#0758a6] text-xs font-extrabold text-white">{busLabel(bus)}</span><div className="min-w-0"><p className="truncate text-sm font-bold">{highlight(bus.route)}</p><p className={`text-xs ${isParked(bus) ? 'text-[#8592a1]' : 'font-semibold text-[#b8860b]'}`}>{isParked(bus) ? highlight(`Zone ${bus.zone} · Pos ${pad2(bus.position)}`) : 'Not parked yet'}</p></div></div><ArrowRight size={15} className="shrink-0 text-[#9aa7b7]" /></button>)}</div></div></aside>
+              })}</div><div className="mt-5 rounded-xl bg-[#f1f5f8] p-4"><div className="flex items-center gap-3"><Navigation size={18} className="text-[#0758a6]" /><div><p className="text-sm font-bold">How to use the layout</p><p className="mt-1 text-xs leading-5 text-[#6f7e91]">Enter through the main gate, then follow the lane signs. Every lane has its own numbered positions.</p></div></div></div></section>
+            <aside className="space-y-4"><div className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><p className="text-xs font-bold uppercase tracking-[0.15em] text-[#8290a1]">Selected bus</p><div className="mt-1 flex items-center justify-between"><h2 className="text-2xl font-bold">Bus {busLabel(selected)}</h2><span className={`rounded-full px-2.5 py-1 text-xs font-bold ${isParked(selected) ? 'bg-[#e9f7f0] text-[#218d5e]' : 'bg-[#fdf3d8] text-[#b8860b]'}`}>{isParked(selected) ? 'Parked' : 'Not parked yet'}</span></div><div className={`mt-5 rounded-xl p-4 ${isParked(selected) ? 'bg-[#edf4fb]' : 'bg-[#fdf3d8]'}`}><p className="text-xs font-bold uppercase tracking-wider text-[#6c7d91]">Parked at</p><p className={`mt-1 text-lg font-extrabold ${isParked(selected) ? 'text-[#0758a6]' : 'text-[#b8860b]'}`}>{formatLocation(selected)}</p>{!isParked(selected) && <p className="mt-1 text-xs leading-5 text-[#7a6a3a]">A transport admin has not recorded where this bus is parked yet.</p>}</div><PositionMap bus={selected} buses={buses} layout={layout} /><div className="mt-4 flex items-center gap-3"><div className="flex size-9 items-center justify-center rounded-lg bg-[#e9f7f0] text-[#218d5e]"><Navigation size={18} /></div><div><p className="text-xs text-[#8290a1]">Route</p><p className="font-bold">{selected.route}</p></div></div><button type="button" onClick={() => setViewingBus(selected)} className="cursor-pointer mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0758a6] py-3 text-sm font-bold text-white transition hover:bg-[#064984] active:scale-95">View full bus details <ArrowRight size={16} /></button></div><div id="bus-list" className="rounded-2xl border border-[#dce4ed] bg-white p-5 shadow-[0_8px_30px_rgba(21,34,56,0.05)]"><div className="mb-3 flex items-center justify-between"><h2 className="font-bold">{isSearching ? 'Matches' : 'All buses'}</h2><span className="text-xs font-semibold text-[#8190a2]">{visible.length} shown</span></div><div className="max-h-64 space-y-1 overflow-auto">{visible.length === 0 ? <p className="rounded-xl bg-[#f7f9fb] p-4 text-center text-sm text-[#6f7e91]">No buses match your search.</p> : visible.map((bus) => <button key={bus.number} type="button" onClick={() => { selectBus(bus); setViewingBus(bus); }} className={`cursor-pointer flex w-full items-center justify-between rounded-xl px-3 py-3 text-left transition active:scale-[0.99] ${selected.number === bus.number ? 'bg-[#edf4fb]' : 'hover:bg-[#f5f7fa]'}`}><div className="flex items-center gap-3"><span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#0758a6] text-xs font-extrabold text-white">{busLabel(bus)}</span><div className="min-w-0"><p className="truncate text-sm font-bold">{highlight(bus.route)}</p><p className={`text-xs ${isParked(bus) ? 'text-[#8592a1]' : 'font-semibold text-[#b8860b]'}`}>{isParked(bus) ? highlight(`Lane ${bus.zone} · Pos ${pad2(bus.position)}`) : 'Not parked yet'}</p></div></div><ArrowRight size={15} className="shrink-0 text-[#9aa7b7]" /></button>)}</div></div></aside>
           </div>
         </> : <AdminPanel loggedIn={loggedIn} draft={draft} setDraft={setDraft} buses={buses} selectBus={selectBus} saveLocation={saveLocation} clearLocation={clearLocation} saved={saved} saving={saving} saveError={saveError} layout={layout} />}
-        <footer className="mt-8 flex flex-col gap-2 text-xs text-[#8491a1] sm:flex-row sm:items-center sm:justify-between"><p>Locations are updated by authorized Transport/Admin staff.</p><div className="flex flex-wrap items-center gap-x-4 gap-y-1"><p>Car park layout · {zoneList.length} zone{zoneList.length === 1 ? '' : 's'} ({zoneList.map((zone) => zone.name).join(', ')}) · {zoneList.reduce((sum, zone) => sum + zone.positions, 0)} positions</p><a href="/super-admin" className="font-semibold text-[#6b7a8d] underline-offset-2 hover:text-[#0758a6] hover:underline">Super admin</a></div></footer>
+        <footer className="mt-8 flex flex-col gap-2 text-xs text-[#8491a1] sm:flex-row sm:items-center sm:justify-between"><p>Locations are updated by authorized Transport/Admin staff.</p><div className="flex flex-wrap items-center gap-x-4 gap-y-1"><p>Car park layout · {zoneList.length} lane{zoneList.length === 1 ? '' : 's'} ({zoneList.map((zone) => zone.name).join(', ')}) · {zoneList.reduce((sum, zone) => sum + zone.positions, 0)} positions</p><a href="/super-admin" className="font-semibold text-[#6b7a8d] underline-offset-2 hover:text-[#0758a6] hover:underline">Super admin</a></div></footer>
       </div>
 
       {showLogin && (
@@ -522,14 +528,14 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
               <div className="rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3.5">
                 <p className="font-bold text-[#17263d]">🔍 Finding Your Bus</p>
                 <p className="mt-1 text-xs leading-relaxed text-[#64748b]">
-                  Search by bus number (e.g. <span className="font-bold text-[#0758a6]">07</span>), destination route (e.g. <span className="font-bold text-[#0758a6]">IGANDO</span>), or location (e.g. <span className="font-bold text-[#0758a6]">Zone D</span>). Press <kbd className="rounded bg-white px-1.5 py-0.5 border text-[11px] font-mono shadow-xs">Enter</kbd> to quickly select the top match.
+                  Search by bus number (e.g. <span className="font-bold text-[#0758a6]">07</span>), destination route (e.g. <span className="font-bold text-[#0758a6]">IGANDO</span>), or location (e.g. <span className="font-bold text-[#0758a6]">Lane D</span>). Press <kbd className="rounded bg-white px-1.5 py-0.5 border text-[11px] font-mono shadow-xs">Enter</kbd> to quickly select the top match.
                 </p>
               </div>
 
               <div className="rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3.5">
                 <p className="font-bold text-[#17263d]">📍 Parking Slots & Positions</p>
                 <p className="mt-1 text-xs leading-relaxed text-[#64748b]">
-                  Each zone is divided into numbered position slots. The visual map displays the exact spot your shuttle is currently parked at in the car park.
+                  Each lane is divided into numbered position slots. The visual map displays the exact spot your shuttle is currently parked at in the car park.
                 </p>
               </div>
 
@@ -644,7 +650,7 @@ function AdminPanel({
         <div className="mb-6">
           <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#0758a6]">Transport control</p>
           <h2 className="mt-1 text-2xl font-bold">Update a bus location</h2>
-          <p className="mt-2 text-sm text-[#718095]">Choose the bus, then record the zone and position it is parked in today.</p>
+          <p className="mt-2 text-sm text-[#718095]">Choose the bus, then record the lane and position it is parked in today.</p>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -664,14 +670,14 @@ function AdminPanel({
               <option value="">Select a bus</option>
               {buses.map((bus) => (
                 <option key={bus.number} value={String(bus.number)}>
-                  Bus {pad2(bus.number)} · {bus.route} {isParked(bus) ? `(Zone ${bus.zone} · Pos ${pad2(bus.position)})` : '(Not parked yet)'}
+                  Bus {pad2(bus.number)} · {bus.route} {isParked(bus) ? `(Lane ${bus.zone} · Pos ${pad2(bus.position)})` : '(Not parked yet)'}
                 </option>
               ))}
             </select>
           </label>
 
           <Select
-            label="Zone"
+            label="Lane"
             value={activeZoneName}
             onChange={(newZone) => {
               const zoneObj = findZone(layout, newZone)
@@ -695,7 +701,7 @@ function AdminPanel({
                 className="w-full appearance-none rounded-xl border border-[#d6e0ea] bg-white px-3 py-3 font-medium text-[#17263d] focus:border-[#0758a6] focus:outline-none focus:ring-2 focus:ring-[#dcecff] disabled:bg-[#f4f6f9] disabled:text-[#8290a1]"
               >
                 {availablePositions.length === 0 ? (
-                  <option value="">All positions in this zone are occupied</option>
+                  <option value="">All positions in this lane are occupied</option>
                 ) : (
                   allPositions.map((pos) => {
                     const takenByBus = occupiedInZone.get(pos)
@@ -728,7 +734,7 @@ function AdminPanel({
 
         {availablePositions.length === 0 && (
           <p className="mt-3 text-xs font-semibold text-[#c0392b]">
-            All {activeZone?.positions} positions in Zone {activeZoneName} are already occupied by other buses. Please choose another zone or unpark a bus.
+            All {activeZone?.positions} positions in Lane {activeZoneName} are already occupied by other buses. Please choose another lane or unpark a bus.
           </p>
         )}
 
@@ -769,7 +775,7 @@ function AdminPanel({
           {draft.number ? `Bus ${pad2(draft.number)}` : 'No bus selected'}
         </p>
         <p className="mt-2 text-lg font-bold">
-          {draft.number ? `Zone ${activeZoneName || '—'} · Position ${pad2(safePosition)}` : 'Select a bus to preview'}
+          {draft.number ? `Lane ${activeZoneName || '—'} · Position ${pad2(safePosition)}` : 'Select a bus to preview'}
         </p>
         <div className="mt-5 flex items-start gap-2 text-sm leading-6 text-[#5e7188]">
           <MapPin size={17} className="mt-1 shrink-0 text-[#0758a6]" />
@@ -781,12 +787,12 @@ function AdminPanel({
 }
 
 /**
- * Visual position map for the selected bus's zone.
- * Renders only the buses parked in this zone, facing the entrance (downward):
- * - Number of 3D buses = number of buses parked in this zone
+ * Visual position map for the selected bus's lane.
+ * Renders only the buses parked in this lane, facing the entrance (downward):
+ * - Number of 3D buses = number of buses parked in this lane
  * - Selected bus is blue
- * - Other parked buses in the zone are grey
- * - Labeled with "Zone [name]" and "Entrance" at the bottom
+ * - Other parked buses in the lane are grey
+ * - Labeled with "Lane [name]" and "Entrance" at the bottom
  */
 function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: Layout }) {
   if (!isParked(bus)) return null
@@ -810,10 +816,10 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-[#6c7d91]">
-            Zone {zone.name} Parking Map
+            Lane {zone.name} Parking Map
           </p>
           <p className="text-[11px] text-[#8b98a8]">
-            {parkedInZone.length} bus{parkedInZone.length === 1 ? '' : 'es'} parked in Zone {zone.name}
+            {parkedInZone.length} bus{parkedInZone.length === 1 ? '' : 'es'} parked in Lane {zone.name}
           </p>
         </div>
         <span className="inline-flex items-center gap-1.5 rounded-full bg-[#edf4fb] px-2.5 py-1 text-xs font-bold text-[#0758a6]">
@@ -882,10 +888,10 @@ function PositionMap({ bus, buses, layout }: { bus: Bus; buses: Bus[]; layout: L
           })}
         </div>
 
-        {/* Zone Name Label */}
+        {/* Lane Name Label */}
         <div className="mt-7 text-center">
           <p className="text-lg font-bold tracking-tight text-[#17263d]">
-            Zone {zone.name}
+            Lane {zone.name}
           </p>
         </div>
 
@@ -983,7 +989,7 @@ function BusDetailsDialog({
             </p>
             {parked ? (
               <p className="mt-1.5 text-xs leading-relaxed text-[#516176]">
-                This shuttle is positioned at slot bay <strong className="text-[#0758a6]">#{pad2(bus.position)}</strong> in Zone <strong className="text-[#0758a6]">{bus.zone}</strong>.
+                This shuttle is positioned at slot bay <strong className="text-[#0758a6]">#{pad2(bus.position)}</strong> in Lane <strong className="text-[#0758a6]">{bus.zone}</strong>.
               </p>
             ) : (
               <p className="mt-1.5 text-xs leading-relaxed text-[#7a6a3a]">
@@ -1002,7 +1008,7 @@ function BusDetailsDialog({
                   onClick={() => onViewZone(zone.name)}
                   className="cursor-pointer mt-4 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#0758a6] bg-[#f0f7fe] py-2.5 text-xs font-bold text-[#0758a6] transition hover:bg-[#e1f0fe] active:scale-95"
                 >
-                  <MapPin size={15} /> View all buses in Zone {zone.name} →
+                  <MapPin size={15} /> View all buses in Lane {zone.name} →
                 </button>
               )}
             </div>
@@ -1025,7 +1031,7 @@ function BusDetailsDialog({
                 <p className="mb-1.5 font-bold text-[#17263d]">Walking directions:</p>
                 <ol className="list-decimal space-y-1 pl-4">
                   <li>Enter through the main car park pedestrian gate.</li>
-                  <li>Follow the overhead signage towards <strong className="text-[#0758a6]">Zone {bus.zone}</strong>.</li>
+                  <li>Follow the overhead signage towards <strong className="text-[#0758a6]">Lane {bus.zone}</strong>.</li>
                   <li>Locate bay slot number <strong className="text-[#0758a6]">{pad2(bus.position)}</strong>.</li>
                 </ol>
               </div>
@@ -1094,14 +1100,14 @@ function ZoneDetailsDialog({
             <div>
               <div className="flex items-center gap-2">
                 <h2 id="zone-dialog-title" className="text-xl font-bold tracking-tight text-[#17263d]">
-                  Zone {zone.name}
+                  Lane {zone.name}
                 </h2>
                 <span className="rounded-full bg-[#edf4fb] px-2.5 py-0.5 text-xs font-bold text-[#0758a6]">
                   {parkedInZone.length} of {zone.positions} parked
                 </span>
               </div>
               <p className="text-xs font-medium text-[#718095]">
-                {emptyCount > 0 ? `${emptyCount} empty slot${emptyCount === 1 ? '' : 's'} available` : 'Zone is full'}
+                {emptyCount > 0 ? `${emptyCount} empty slot${emptyCount === 1 ? '' : 's'} available` : 'Lane is full'}
               </p>
             </div>
           </div>
@@ -1133,7 +1139,7 @@ function ZoneDetailsDialog({
               </div>
             </div>
 
-            <ul className="grid grid-cols-5 gap-1.5 sm:grid-cols-6" aria-label={`Position map for zone ${zone.name}`}>
+            <ul className="grid grid-cols-5 gap-1.5 sm:grid-cols-6" aria-label={`Position map for lane ${zone.name}`}>
               {slots.map((slot) => {
                 const busInSlot = parkedInZone.find((b) => b.position === slot)
                 return (
@@ -1168,7 +1174,7 @@ function ZoneDetailsDialog({
           <div>
             <div className="mb-2.5 flex items-center justify-between">
               <h3 className="text-sm font-bold text-[#17263d]">
-                Buses Parked in Zone {zone.name}
+                Buses Parked in Lane {zone.name}
               </h3>
               <span className="text-xs font-semibold text-[#8190a2]">
                 {parkedInZone.length} shuttle{parkedInZone.length === 1 ? '' : 's'}
@@ -1178,7 +1184,7 @@ function ZoneDetailsDialog({
             {parkedInZone.length === 0 ? (
               <div className="rounded-2xl border-2 border-dashed border-[#dce4ed] bg-[#f9fbfc] p-8 text-center">
                 <BusFront className="mx-auto text-[#9aa7b7]" size={34} />
-                <p className="mt-3 text-sm font-bold text-[#17263d]">No buses parked in Zone {zone.name}</p>
+                <p className="mt-3 text-sm font-bold text-[#17263d]">No buses parked in Lane {zone.name}</p>
                 <p className="mt-1 text-xs text-[#6f7e91]">All {zone.positions} position slots are currently empty and available.</p>
               </div>
             ) : (

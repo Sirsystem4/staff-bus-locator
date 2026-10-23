@@ -40,12 +40,14 @@ export const isParked = (bus: Bus): bus is Bus & { zone: string; position: numbe
   bus.zone !== null && bus.position !== null
 
 export const formatLocation = (bus: Bus) =>
-  isParked(bus) ? `Zone ${bus.zone} · Position ${pad2(bus.position)}` : 'Not parked yet'
+  isParked(bus) ? `Lane ${bus.zone} · Position ${pad2(bus.position)}` : 'Not parked yet'
 
 type SearchField = 'number' | 'route' | 'zone' | 'position'
 
-/** Words that bind the token after them to a specific field: "zone a", "pos 12". */
+/** Words that bind the token after them to a specific field: "lane a", "pos 12". */
 const FIELD_ALIASES: Record<string, SearchField> = {
+  lane: 'zone',
+  lanes: 'zone',
   zone: 'zone',
   pos: 'position',
   position: 'position',
@@ -164,10 +166,10 @@ export const validateBus = (draft: BusDraft, existingNumbers: number[]): string 
 export const validateLocation = (location: LocationDraft, layout: Layout): string | null => {
   const zone = findZone(layout, location.zone)
   if (!zone) {
-    return `Zone "${location.zone}" is not part of the car park layout.`
+    return `Lane "${location.zone}" is not part of the car park layout.`
   }
   if (!Number.isInteger(location.position) || location.position < 1 || location.position > zone.positions) {
-    return `Position must be a whole number between 1 and ${zone.positions} for zone ${zone.name}.`
+    return `Position must be a whole number between 1 and ${zone.positions} for Lane ${zone.name}.`
   }
   return null
 }

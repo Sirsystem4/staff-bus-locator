@@ -131,11 +131,11 @@ export async function moveBus(number: number, location: LocationDraft | null): P
     const error = validateLocation(location, await readLayout())
     if (error) return fail(error)
 
-    // A position can only be occupied by a single bus in the same zone.
+    // A position can only be occupied by a single bus in the same lane.
     const conflict = busAtPosition(buses, location.zone, location.position, number)
     if (conflict) {
       return fail(
-        `Position ${pad2(location.position)} in Zone ${location.zone} is already taken by Bus ${pad2(conflict.number)}.`,
+        `Position ${pad2(location.position)} in Lane ${location.zone} is already taken by Bus ${pad2(conflict.number)}.`,
       )
     }
   }
@@ -157,8 +157,8 @@ export async function moveBus(number: number, location: LocationDraft | null): P
     const title = isRelocated ? `Bus ${pad2(number)} Moved` : `Bus ${pad2(number)} Parked`
     const body =
       isRelocated && existingBus.zone && existingBus.position
-        ? `Bus ${pad2(number)}${busRoute} moved to Zone ${location.zone} · Bay ${pad2(location.position)} (was Zone ${existingBus.zone} · Bay ${pad2(existingBus.position)}).`
-        : `Bus ${pad2(number)}${busRoute} is parked at Zone ${location.zone} · Bay ${pad2(location.position)}.`
+        ? `Bus ${pad2(number)}${busRoute} moved to Lane ${location.zone} · Bay ${pad2(location.position)} (was Lane ${existingBus.zone} · Bay ${pad2(existingBus.position)}).`
+        : `Bus ${pad2(number)}${busRoute} is parked at Lane ${location.zone} · Bay ${pad2(location.position)}.`
 
     sendPushToAll({
       title,

@@ -47,18 +47,18 @@ export const validateZone = (
 ): string | null => {
   const name = typeof draft.name === 'string' ? draft.name.trim() : ''
 
-  if (!name) return 'Zone name is required.'
+  if (!name) return 'Lane name is required.'
   if (name.length > MAX_ZONE_NAME_LENGTH) {
-    return `Zone name must be ${MAX_ZONE_NAME_LENGTH} characters or fewer.`
+    return `Lane name must be ${MAX_ZONE_NAME_LENGTH} characters or fewer.`
   }
   if (existingNames.some((existing) => existing.toLowerCase() === name.toLowerCase())) {
-    return `Zone "${name}" already exists. Zone names must be unique.`
+    return `Lane "${name}" already exists. Lane names must be unique.`
   }
   if (!Number.isInteger(draft.positions) || draft.positions < 1 || draft.positions > MAX_POSITIONS_PER_ZONE) {
     return `Positions must be a whole number between 1 and ${MAX_POSITIONS_PER_ZONE}.`
   }
   if (existingNames.length >= MAX_ZONES) {
-    return `A car park can have at most ${MAX_ZONES} zones.`
+    return `A car park can have at most ${MAX_ZONES} lanes.`
   }
   return null
 }

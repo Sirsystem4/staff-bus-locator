@@ -249,10 +249,10 @@ export default function SuperAdminPanel({
     setZoneError('')
     setZoneNotice(
       editingZone === null
-        ? `Zone "${zoneDraft.name.trim()}" added. Transport admins can now park buses there.`
+        ? `Lane "${zoneDraft.name.trim()}" added. Transport admins can now park buses there.`
         : result.affected > 0
-          ? `Zone "${zoneDraft.name.trim()}" updated. ${result.affected} bus${result.affected === 1 ? '' : 'es'} moved or marked as not parked.`
-          : `Zone "${zoneDraft.name.trim()}" updated.`,
+          ? `Lane "${zoneDraft.name.trim()}" updated. ${result.affected} bus${result.affected === 1 ? '' : 'es'} moved or marked as not parked.`
+          : `Lane "${zoneDraft.name.trim()}" updated.`,
     )
     resetZoneForm()
   }
@@ -274,8 +274,8 @@ export default function SuperAdminPanel({
     setZoneError('')
     setZoneNotice(
       result.affected > 0
-        ? `Zone "${name}" removed. ${result.affected} bus${result.affected === 1 ? ' was' : 'es were'} marked as not parked.`
-        : `Zone "${name}" removed.`,
+        ? `Lane "${name}" removed. ${result.affected} bus${result.affected === 1 ? ' was' : 'es were'} marked as not parked.`
+        : `Lane "${name}" removed.`,
     )
     if (editingZone === name) resetZoneForm()
   }
@@ -357,7 +357,7 @@ export default function SuperAdminPanel({
             <p className="mt-0.5 text-[11px] text-[#8290a1]">Transport admin to place</p>
           </div>
           <div className="rounded-2xl border border-[#dce4ed] bg-white p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-[#8290a1]">Zones defined</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-[#8290a1]">Lanes defined</p>
             <p className="mt-1 text-2xl font-extrabold text-[#0758a6]">{layout.zones.length}</p>
             <p className="mt-0.5 text-[11px] text-[#8290a1]">{totalPositions} positions total</p>
           </div>
@@ -375,7 +375,7 @@ export default function SuperAdminPanel({
               <h2 className="font-bold">{editing === null ? 'Add a bus' : `Edit bus ${pad2(editing)}`}</h2>
               {editing !== null && <button onClick={startAdd} className="flex items-center gap-1 text-xs font-bold text-[#6b7a8d] hover:text-[#0758a6]"><X size={14} /> Cancel</button>}
             </div>
-            <p className="mb-5 text-xs leading-5 text-[#7a899b]">Super admin registers the bus and its route. Zone and position are recorded daily by transport admins.</p>
+            <p className="mb-5 text-xs leading-5 text-[#7a899b]">Super admin registers the bus and its route. Lane and position are recorded daily by transport admins.</p>
 
             <form onSubmit={submit} className="space-y-4">
               <label className="block text-sm font-bold">
@@ -451,7 +451,7 @@ export default function SuperAdminPanel({
             <div className="mt-5 grid grid-cols-3 gap-2 border-t border-[#eef2f6] pt-4 sm:grid-cols-6">
               {zoneCounts.map(({ name, count, positions }) => (
                 <div key={name} className="rounded-lg bg-[#f4f7fa] px-2 py-2 text-center">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7c8b9c]">Zone {name}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#7c8b9c]">Lane {name}</p>
                   <p className="text-sm font-extrabold text-[#0758a6]">{count}<span className="text-[10px] font-semibold text-[#8b98a8]"> / {positions}</span></p>
                 </div>
               ))}
@@ -463,9 +463,9 @@ export default function SuperAdminPanel({
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold">Car park layout</h2>
-              <p className="mt-1 text-sm text-[#718095]">The zones and positions transport admins can choose from. Removing a zone marks its buses as not parked.</p>
+              <p className="mt-1 text-sm text-[#718095]">The lanes and positions transport admins can choose from. Removing a lane marks its buses as not parked.</p>
             </div>
-            <span className="rounded-lg bg-[#edf4fb] px-3 py-2 text-xs font-bold text-[#0758a6]">{layout.zones.length} zones · {totalPositions} positions</span>
+            <span className="rounded-lg bg-[#edf4fb] px-3 py-2 text-xs font-bold text-[#0758a6]">{layout.zones.length} lanes · {totalPositions} positions</span>
           </div>
 
           {zoneNotice && <p role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-[#bfe4d1] bg-[#e9f7f0] px-4 py-3 text-sm font-semibold text-[#218d5e]"><Check size={16} /> {zoneNotice}</p>}
@@ -473,12 +473,12 @@ export default function SuperAdminPanel({
           <div className="mt-5 grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
             <form ref={zoneFormRef} onSubmit={submitZone} className="rounded-xl border border-[#dce4ed] bg-[#f9fbfc] p-4">
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-sm font-bold">{editingZone === null ? 'Add a zone' : `Edit zone ${editingZone}`}</h3>
+                <h3 className="text-sm font-bold">{editingZone === null ? 'Add a lane' : `Edit lane ${editingZone}`}</h3>
                 {editingZone !== null && <button type="button" onClick={resetZoneForm} className="flex items-center gap-1 text-xs font-bold text-[#6b7a8d] hover:text-[#0758a6]"><X size={14} /> Cancel</button>}
               </div>
 
               <label className="block text-sm font-bold">
-                Zone name
+                Lane name
                 <input
                   ref={zoneNameInputRef}
                   value={zoneDraft.name}
@@ -506,13 +506,13 @@ export default function SuperAdminPanel({
               {zoneError && <p role="alert" className="mt-3 flex items-start gap-1.5 rounded-lg bg-[#fdecea] px-3 py-2 text-sm font-semibold text-[#c0392b]"><TriangleAlert size={15} className="mt-0.5 shrink-0" /> {zoneError}</p>}
 
               <button type="submit" disabled={zoneBusy} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#0758a6] py-2.5 text-sm font-bold text-white hover:bg-[#064984] disabled:opacity-50">
-                {editingZone === null ? <><Plus size={16} /> Add zone</> : <><Check size={16} /> Save zone</>}
+                {editingZone === null ? <><Plus size={16} /> Add lane</> : <><Check size={16} /> Save lane</>}
               </button>
             </form>
 
             <div>
               {layout.zones.length === 0 ? (
-                <p className="rounded-xl bg-[#f7f9fb] p-8 text-center text-sm text-[#6f7e91]">No zones defined yet.</p>
+                <p className="rounded-xl bg-[#f7f9fb] p-8 text-center text-sm text-[#6f7e91]">No lanes defined yet.</p>
               ) : (
                 <ul className="divide-y divide-[#eef2f6]">
                   {layout.zones.map((zone) => {
@@ -531,15 +531,15 @@ export default function SuperAdminPanel({
                         {pendingZoneDelete === zone.name ? (
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-semibold text-[#c0392b]">
-                              {parkedHere > 0 ? `Remove zone and un-park ${parkedHere} bus${parkedHere === 1 ? '' : 'es'}?` : `Remove zone ${zone.name}?`}
+                              {parkedHere > 0 ? `Remove lane and un-park ${parkedHere} bus${parkedHere === 1 ? '' : 'es'}?` : `Remove lane ${zone.name}?`}
                             </span>
                             <button onClick={() => removeZone(zone.name)} disabled={zoneBusy} className="rounded-lg bg-[#c0392b] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-[#a93226]">Yes, remove</button>
                             <button onClick={() => setPendingZoneDelete(null)} className="rounded-lg border border-[#dce4ed] px-2.5 py-1.5 text-xs font-bold text-[#516176] hover:bg-[#f5f7fa]">Cancel</button>
                           </div>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <button onClick={() => startEditZone(zone)} aria-label={`Edit zone ${zone.name}`} className="rounded-lg border border-[#dce4ed] p-2 text-[#516176] hover:bg-[#edf4fb] hover:text-[#0758a6]"><Pencil size={15} /></button>
-                            <button onClick={() => setPendingZoneDelete(zone.name)} aria-label={`Remove zone ${zone.name}`} disabled={layout.zones.length <= 1} className="rounded-lg border border-[#dce4ed] p-2 text-[#516176] hover:bg-[#fdecea] hover:text-[#c0392b] disabled:opacity-40"><Trash2 size={15} /></button>
+                            <button onClick={() => startEditZone(zone)} aria-label={`Edit lane ${zone.name}`} className="rounded-lg border border-[#dce4ed] p-2 text-[#516176] hover:bg-[#edf4fb] hover:text-[#0758a6]"><Pencil size={15} /></button>
+                            <button onClick={() => setPendingZoneDelete(zone.name)} aria-label={`Remove lane ${zone.name}`} disabled={layout.zones.length <= 1} className="rounded-lg border border-[#dce4ed] p-2 text-[#516176] hover:bg-[#fdecea] hover:text-[#c0392b] disabled:opacity-40"><Trash2 size={15} /></button>
                           </div>
                         )}
                       </li>
@@ -549,7 +549,7 @@ export default function SuperAdminPanel({
               )}
 
               <p className="mt-4 rounded-lg bg-[#f7f9fb] px-3 py-2 text-xs leading-5 text-[#6f7e91]">
-                Renaming a zone moves every bus parked there. Reducing its positions marks any bus beyond the new last position as not parked.
+                Renaming a lane moves every bus parked there. Reducing its positions marks any bus beyond the new last position as not parked.
               </p>
             </div>
           </div>
