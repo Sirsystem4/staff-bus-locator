@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, ArrowRight, BusFront, Check, ChevronDown, CircleHelp, Database, KeyRound, MapPin, Navigation, Search, ShieldCheck, X } from 'lucide-react'
 import { verifyAdminAccessCode } from '@/app/actions/auth'
 import { getBuses, moveBus } from '@/app/actions/buses'
@@ -17,6 +17,9 @@ import {
   tokenize,
 } from '@/lib/buses'
 import { findZone, positionOptions, type Layout, type Zone } from '@/lib/layout'
+import { createParkNotification } from '@/lib/bus-events'
+import { useBusLiveNotifications } from '@/lib/use-bus-notifications'
+import { BusNotificationToastList, BusActivityDrawer } from '@/components/bus-notifications'
 
 
 export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[]; layout: Layout }) {
@@ -39,47 +42,39 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
   const [saving, setSaving] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  // Real-time synchronization via Supabase Postgres changes (safely wrapped for mobile Safari)
-  useEffect(() => {
-    try {
-      const channel = supabase
-        .channel('bus-finder-realtime')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'buses' },
-          async () => {
-            try {
-              const fresh = await getBuses()
-              if (Array.isArray(fresh)) {
-                setBuses(fresh)
-                setSelected((curr) => {
-                  const updated = fresh.find((b) => b.number === curr.number)
-                  return updated ?? curr
-                })
-                setViewingBus((curr) => {
-                  if (!curr) return null
-                  const updated = fresh.find((b) => b.number === curr.number)
-                  return updated ?? curr
-                })
-              }
-            } catch (fetchErr) {
-              console.warn('Realtime sync fetch error:', fetchErr)
-            }
-          },
-        )
-        .subscribe((status) => {
-          setIsLiveConnected(status === 'SUBSCRIBED')
-        })
-
-      return () => {
-        try {
-          supabase.removeChannel(channel)
-        } catch {}
-      }
-    } catch (subErr) {
-      console.warn('Realtime subscription error:', subErr)
-    }
+  const handleBusesUpdated = useCallback((fresh: Bus[]) => {
+    setBuses(fresh)
+    setSelected((curr) => {
+      const updated = fresh.find((b) => b.number === curr.number)
+      return updated ?? curr
+    })
+    setViewingBus((curr) => {
+      if (!curr) return null
+      const updated = fresh.find((b) => b.number === curr.number)
+      return updated ?? curr
+    })
   }, [])
+
+  const { toasts, history, dismissToast, clearHistory, pushNotification } = useBusLiveNotifications({
+    buses,
+    onBusesUpdated: handleBusesUpdated,
+  })
+
+  const handleSelectBusFromNotification = useCallback(
+    (busNumber: number) => {
+      const targetBus = buses.find((b) => b.number === busNumber)
+      if (targetBus) {
+        setSelected(targetBus)
+        setDraft({
+          ...targetBus,
+          zone: targetBus.zone ?? layout.zones[0]?.name ?? '',
+          position: targetBus.position ?? 1,
+        })
+        setViewingBus(targetBus)
+      }
+    },
+    [buses, layout.zones],
+  )
 
   const busLabel = (bus: Bus) => pad2(bus.number)
   const zoneList = layout.zones
@@ -141,6 +136,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
     setSaveError('')
     const targetZone = draft.zone ?? firstZoneName
     const targetPosition = draft.position ?? 1
+    const oldBus = buses.find((b) => b.number === draft.number)
     const result = await moveBus(draft.number, { zone: targetZone, position: targetPosition })
     setSaving(false)
 
@@ -157,11 +153,16 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
     setSelected(updatedBus)
     setDraft(updatedBus)
     setSaved(true)
+
+    // Trigger pop up user notification & broadcast
+    const notif = createParkNotification(updatedBus, oldBus)
+    pushNotification(notif, true)
   }
   const clearLocation = async () => {
     if (saving || !draft.number) return
     setSaving(true)
     setSaveError('')
+    const oldBus = buses.find((b) => b.number === draft.number)
     const result = await moveBus(draft.number, null)
     setSaving(false)
 
@@ -182,6 +183,10 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
       position: 1,
     })
     setSaved(false)
+
+    // Trigger pop up user notification & broadcast
+    const notif = createParkNotification(unparkedBus, oldBus)
+    pushNotification(notif, true)
   }
   const signIn = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -216,6 +221,11 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
 
   return (
     <main className="min-h-screen bg-[#f5f7fa] text-[#17263d]">
+      <BusNotificationToastList
+        notifications={toasts}
+        onDismiss={dismissToast}
+        onSelectBus={handleSelectBusFromNotification}
+      />
       <header className="border-b border-[#dce4ed] bg-white">
         <div className="mx-auto flex max-w-[1360px] items-center justify-between gap-4 px-4 py-3.5 sm:px-5 sm:py-4 lg:px-10">
           <div className="flex min-w-0 items-center gap-3">
@@ -228,10 +238,11 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {/* <span className="hidden items-center gap-1.5 rounded-full border border-[#bbf7d0] bg-[#f0fdf4] px-2.5 py-1 text-xs font-semibold text-[#166534] md:flex" title="Realtime synchronized with Supabase database">
-              <span className={`size-2 rounded-full ${isLiveConnected ? 'bg-[#22c55e] animate-pulse' : 'bg-[#eab308]'}`} />
-              {isLiveConnected ? 'Supabase live Now' : 'Reconnecting...'}
-            </span> */}
+            <BusActivityDrawer
+              history={history}
+              onSelectBus={handleSelectBusFromNotification}
+              onClearHistory={clearHistory}
+            />
             <button
               type="button"
               onClick={() => {

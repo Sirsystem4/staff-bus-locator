@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Check, Database, KeyRound, Pencil, Plus, ShieldCheck, Trash2, TriangleAlert, X } from 'lucide-react'
 
 import { verifySuperAdminAccessCode } from '@/app/actions/auth'
@@ -16,6 +16,13 @@ import {
   type BusDraft,
 } from '@/lib/buses'
 import { MAX_POSITIONS_PER_ZONE, type Layout, type Zone } from '@/lib/layout'
+import {
+  createBusAddedNotification,
+  createBusDeletedNotification,
+  createBusEditedNotification,
+} from '@/lib/bus-events'
+import { useBusLiveNotifications } from '@/lib/use-bus-notifications'
+import { BusNotificationToastList, BusActivityDrawer } from '@/components/bus-notifications'
 
 const blankDraft = (number: number): BusDraft => ({ number, route: '' })
 const blankZone = (): Zone => ({ name: '', positions: 20 })
@@ -39,19 +46,20 @@ export default function SuperAdminPanel({
   const [authError, setAuthError] = useState('')
   const [verifying, setVerifying] = useState(false)
 
-  // Real-time synchronization via Supabase Postgres changes
+  const handleBusesUpdated = useCallback((fresh: Bus[]) => {
+    setBuses(fresh)
+  }, [])
+
+  const { toasts, history, dismissToast, clearHistory, pushNotification } = useBusLiveNotifications({
+    buses,
+    onBusesUpdated: handleBusesUpdated,
+  })
+
+  // Real-time synchronization for zones via Supabase Postgres changes
   useEffect(() => {
     try {
       const channel = supabase
-        .channel('super-admin-realtime')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'buses' }, async () => {
-          try {
-            const fresh = await getBuses()
-            if (Array.isArray(fresh)) setBuses(fresh)
-          } catch (e) {
-            console.error('Realtime bus fetch error:', e)
-          }
-        })
+        .channel('super-admin-zones-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'zones' }, async () => {
           try {
             const fresh = await getLayout()
@@ -68,7 +76,7 @@ export default function SuperAdminPanel({
         } catch {}
       }
     } catch (e) {
-      console.warn('Realtime super-admin init error:', e)
+      console.warn('Realtime super-admin zones init error:', e)
     }
   }, [])
 
@@ -143,6 +151,9 @@ export default function SuperAdminPanel({
       return
     }
 
+    const wasEditing = editing !== null
+    const oldBus = wasEditing ? buses.find((b) => b.number === draft.number) : null
+
     setBusy(true)
     const result = editing === null ? await createBus(draft) : await updateBusRoute(draft)
     setBusy(false)
@@ -159,11 +170,34 @@ export default function SuperAdminPanel({
         ? `Bus ${pad2(draft.number)} added. A transport admin still needs to record where it is parked.`
         : `Bus ${pad2(draft.number)} updated.`,
     )
+
+    // Trigger pop up user notification & broadcast
+    if (wasEditing) {
+      const updatedBus = result.buses.find((b) => b.number === draft.number) || {
+        number: draft.number,
+        route: draft.route.trim(),
+        zone: oldBus?.zone ?? null,
+        position: oldBus?.position ?? null,
+      }
+      const notif = createBusEditedNotification(updatedBus, oldBus)
+      pushNotification(notif, true)
+    } else {
+      const addedBus = result.buses.find((b) => b.number === draft.number) || {
+        number: draft.number,
+        route: draft.route.trim(),
+        zone: null,
+        position: null,
+      }
+      const notif = createBusAddedNotification(addedBus)
+      pushNotification(notif, true)
+    }
+
     startAdd()
   }
 
   const remove = async (number: number) => {
     if (busy) return
+    const oldBus = buses.find((b) => b.number === number)
     setBusy(true)
     const result = await deleteBus(number)
     setBusy(false)
@@ -177,6 +211,11 @@ export default function SuperAdminPanel({
     setBuses(result.buses)
     setNotice(`Bus ${pad2(number)} removed.`)
     if (editing === number) startAdd()
+
+    if (oldBus) {
+      const notif = createBusDeletedNotification(oldBus)
+      pushNotification(notif, true)
+    }
   }
 
   const resetZoneForm = () => {
@@ -282,6 +321,7 @@ export default function SuperAdminPanel({
 
   return (
     <main className="min-h-screen bg-[#f5f7fa] text-[#17263d]">
+      <BusNotificationToastList notifications={toasts} onDismiss={dismissToast} />
       <header className="border-b border-[#dce4ed] bg-white">
         <div className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-3 px-5 py-4 lg:px-8">
           <div className="flex items-center gap-3">
@@ -292,6 +332,7 @@ export default function SuperAdminPanel({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <BusActivityDrawer history={history} onClearHistory={clearHistory} />
             <span className="hidden items-center gap-1.5 rounded-lg border border-[#bbf7d0] bg-[#f0fdf4] px-3 py-2 text-sm font-semibold text-[#166534] sm:flex" title="Directly synced with Supabase PostgreSQL">
               <span className="size-2.5 rounded-full bg-[#22c55e] animate-pulse" /> Supabase connected
             </span>
