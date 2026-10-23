@@ -3,6 +3,7 @@
 import { readBuses, writeBuses } from '@/lib/bus-store'
 import { readLayout } from '@/lib/layout-store'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { sendPushToAll } from '@/lib/push-service'
 import {
   busAtPosition,
   nextBusNumber,
@@ -33,6 +34,14 @@ export async function createBus(draft: BusDraft): Promise<BusActionResult> {
     position: null,
   })
 
+  // Dispatch background push notification
+  sendPushToAll({
+    title: `New Bus Added · Bus ${pad2(draft.number)}`,
+    body: `Bus ${pad2(draft.number)} (${draft.route.trim()}) was added to the register.`,
+    url: '/',
+    busNumber: draft.number,
+  }).catch((err) => console.warn('Push delivery error in createBus:', err))
+
   if (dbError) {
     console.warn('Direct Supabase insert failed, using writeBuses fallback:', dbError.message)
     const next = [...buses, { number: draft.number, route: draft.route.trim(), zone: null, position: null }].sort(
@@ -61,6 +70,14 @@ export async function updateBusRoute(draft: BusDraft): Promise<BusActionResult> 
     .update({ route: draft.route.trim(), updated_at: new Date().toISOString() })
     .eq('number', draft.number)
 
+  // Dispatch background push notification
+  sendPushToAll({
+    title: `Bus Route Updated · Bus ${pad2(draft.number)}`,
+    body: `Bus ${pad2(draft.number)} route was updated to "${draft.route.trim()}".`,
+    url: '/',
+    busNumber: draft.number,
+  }).catch((err) => console.warn('Push delivery error in updateBusRoute:', err))
+
   if (dbError) {
     console.warn('Direct Supabase update failed, using writeBuses fallback:', dbError.message)
     const next = buses.map((bus) =>
@@ -76,12 +93,21 @@ export async function updateBusRoute(draft: BusDraft): Promise<BusActionResult> 
 
 export async function deleteBus(number: number): Promise<BusActionResult> {
   const buses = await readBuses()
-  if (!buses.some((bus) => bus.number === number)) {
+  const busToRemove = buses.find((bus) => bus.number === number)
+  if (!busToRemove) {
     return fail(`Bus ${pad2(number)} no longer exists.`)
   }
 
   const supabase = getSupabaseServerClient()
   const { error: dbError } = await supabase.from('buses').delete().eq('number', number)
+
+  // Dispatch background push notification
+  sendPushToAll({
+    title: `Bus ${pad2(number)} Removed`,
+    body: `Bus ${pad2(number)} (${busToRemove.route}) was removed from the bus register.`,
+    url: '/',
+    busNumber: number,
+  }).catch((err) => console.warn('Push delivery error in deleteBus:', err))
 
   if (dbError) {
     console.warn('Direct Supabase delete failed, using writeBuses fallback:', dbError.message)
@@ -97,7 +123,8 @@ export async function deleteBus(number: number): Promise<BusActionResult> {
 /** Transport admin: park, move or unpark a bus. */
 export async function moveBus(number: number, location: LocationDraft | null): Promise<BusActionResult> {
   const buses = await readBuses()
-  if (!buses.some((bus) => bus.number === number)) {
+  const existingBus = buses.find((bus) => bus.number === number)
+  if (!existingBus) {
     return fail(`Bus ${pad2(number)} no longer exists.`)
   }
   if (location) {
@@ -122,6 +149,33 @@ export async function moveBus(number: number, location: LocationDraft | null): P
       updated_at: new Date().toISOString(),
     })
     .eq('number', number)
+
+  // Dispatch real background Web Push notification
+  const busRoute = existingBus.route ? ` (${existingBus.route})` : ''
+  if (location) {
+    const isRelocated = Boolean(existingBus.zone && existingBus.position)
+    const title = isRelocated ? `Bus ${pad2(number)} Moved` : `Bus ${pad2(number)} Parked`
+    const body =
+      isRelocated && existingBus.zone && existingBus.position
+        ? `Bus ${pad2(number)}${busRoute} moved to Zone ${location.zone} · Bay ${pad2(location.position)} (was Zone ${existingBus.zone} · Bay ${pad2(existingBus.position)}).`
+        : `Bus ${pad2(number)}${busRoute} is parked at Zone ${location.zone} · Bay ${pad2(location.position)}.`
+
+    sendPushToAll({
+      title,
+      body,
+      url: '/',
+      busNumber: number,
+      tag: `bus-location-${number}`,
+    }).catch((err) => console.warn('Push delivery error in moveBus:', err))
+  } else {
+    sendPushToAll({
+      title: `Bus ${pad2(number)} Unparked`,
+      body: `Bus ${pad2(number)}${busRoute} has left its bay and is no longer parked.`,
+      url: '/',
+      busNumber: number,
+      tag: `bus-location-${number}`,
+    }).catch((err) => console.warn('Push delivery error in moveBus unpark:', err))
+  }
 
   if (dbError) {
     console.warn('Direct Supabase moveBus failed, using writeBuses fallback:', dbError.message)

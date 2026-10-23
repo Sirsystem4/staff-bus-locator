@@ -22,6 +22,7 @@ import {
   playNotificationChime,
   type BusNotificationItem,
 } from '@/lib/bus-events'
+import { PushNotificationSettingsCard } from '@/components/push-notification-banner'
 
 interface BusNotificationsProps {
   notifications: BusNotificationItem[]
@@ -314,6 +315,11 @@ export function BusActivityDrawer({
                   <X size={18} />
                 </button>
               </div>
+            </div>
+
+            {/* Push notification settings */}
+            <div className="px-5 pt-4">
+              <PushNotificationSettingsCard />
             </div>
 
             {/* Content List */}

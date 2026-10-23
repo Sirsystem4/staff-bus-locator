@@ -6,6 +6,7 @@ export const metadata: Metadata = {
   title: 'Staff Bus Finder',
   description: 'Find your staff bus quickly with a live car park map.',
   generator: 'v0.app',
+  manifest: '/manifest.json',
   icons: {
     icon: [
       {

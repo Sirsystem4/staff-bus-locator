@@ -20,6 +20,7 @@ import { findZone, positionOptions, type Layout, type Zone } from '@/lib/layout'
 import { createParkNotification } from '@/lib/bus-events'
 import { useBusLiveNotifications } from '@/lib/use-bus-notifications'
 import { BusNotificationToastList, BusActivityDrawer } from '@/components/bus-notifications'
+import { PushNotificationBanner } from '@/components/push-notification-banner'
 
 
 export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[]; layout: Layout }) {
@@ -289,6 +290,7 @@ export default function BusFinder({ initialBuses, layout }: { initialBuses: Bus[
       </header>
 
       <div className="mx-auto max-w-[1360px] px-5 py-8 lg:px-10 lg:py-10">
+        <PushNotificationBanner />
         <div className="mb-7">
           <p className="mb-2 text-sm font-bold uppercase tracking-[0.16em] text-[#0758a6]">
             {mode === 'admin' ? 'Transport Admin Control' : 'Car park locator'}
